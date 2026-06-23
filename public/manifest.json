@@ -1,0 +1,26 @@
+﻿{
+  "name": "E-Perpus KEJAKSAAN AGUNG REPUBLIK INDONESIA",
+  "short_name": "E-Perpus",
+  "description": "Sistem Informasi Perpustakaan Digital KEJAKSAAN AGUNG REPUBLIK INDONESIA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F3F6F4",
+  "theme_color": "#1B4332",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo-kejaksaan.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-kejaksaan.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "education"],
+  "lang": "id"
+}

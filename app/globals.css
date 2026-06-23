@@ -1,0 +1,270 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════ */
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  
+  --green-dark:  #0B1221;
+  --green-main:  #16213E;
+  --green-mid:   #1F2E54;
+  --green-light: #4864A4;
+  --gold:        #d4af37;
+  --gold-light:  #fcd34d;
+  
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  --shadow-sm:   0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+  --shadow-md:   0 8px 24px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+  --shadow-lg:   0 16px 48px rgba(0,0,0,0.08), 0 8px 16px rgba(0,0,0,0.06);
+  --shadow-xl:   0 24px 64px rgba(0,0,0,0.12), 0 12px 24px rgba(0,0,0,0.08);
+  --shadow-green: 0 12px 40px rgba(22,33,62,0.25);
+}
+
+/* ═══════════════════════════════════════
+   BASE
+═══════════════════════════════════════ */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-display {
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.02em;
+}
+
+/* ═══════════════════════════════════════
+   KEYFRAMES  (transform/opacity only)
+═══════════════════════════════════════ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-12px); }
+}
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes pulseRing {
+  0%   { transform: scale(1);   opacity: 0.8; }
+  100% { transform: scale(2);   opacity: 0; }
+}
+@keyframes blobMove {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(30px, -30px) scale(1.1); }
+  66%       { transform: translate(-20px, 20px) scale(0.9); }
+}
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+/* ═══════════════════════════════════════
+   ANIMATION UTILITIES
+═══════════════════════════════════════ */
+.anim-up   { animation: fadeUp  0.7s var(--ease-spring) both; }
+.anim-up-1 { animation: fadeUp  0.7s 0.00s var(--ease-spring) both; }
+.anim-up-2 { animation: fadeUp  0.7s 0.10s var(--ease-spring) both; }
+.anim-up-3 { animation: fadeUp  0.7s 0.20s var(--ease-spring) both; }
+.anim-up-4 { animation: fadeUp  0.7s 0.30s var(--ease-spring) both; }
+.anim-up-5 { animation: fadeUp  0.7s 0.40s var(--ease-spring) both; }
+.anim-up-6 { animation: fadeUp  0.7s 0.50s var(--ease-spring) both; }
+
+.anim-in-1  { animation: fadeIn  0.6s 0.1s ease both; }
+.anim-in-2  { animation: fadeIn  0.6s 0.3s ease both; }
+
+.anim-scale { animation: scaleIn 0.6s var(--ease-spring) both; }
+
+.anim-float      { animation: float     6s ease-in-out infinite; }
+.anim-float-d    { animation: float     6s 3s ease-in-out infinite; }
+.anim-float-slow { animation: floatSlow 8s ease-in-out infinite; }
+.anim-blob       { animation: blobMove  15s ease-in-out infinite; }
+.anim-blob-d     { animation: blobMove  15s 5s ease-in-out infinite; }
+.anim-blob-d2    { animation: blobMove  15s 10s ease-in-out infinite; }
+
+/* ═══════════════════════════════════════
+   SCROLL REVEAL (IntersectionObserver)
+═══════════════════════════════════════ */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s var(--ease-spring), transform 0.8s var(--ease-spring);
+}
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-scale {
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.7s var(--ease-spring), transform 0.7s var(--ease-spring);
+}
+.reveal-scale.revealed {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ═══════════════════════════════════════
+   SHIMMER & GRADIENT TEXT
+═══════════════════════════════════════ */
+.shimmer-text {
+  background: linear-gradient(90deg, #fcd34d 0%, #fffbeb 40%, #fbbf24 60%, #fcd34d 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
+.shimmer-green {
+  background: linear-gradient(90deg, #60A5FA 0%, #DBEAFE 40%, #3B82F6 60%, #60A5FA 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 5s linear infinite;
+}
+.animated-gradient-bg {
+  background: linear-gradient(135deg, #0B1221, #16213E, #1F2E54, #16213E);
+  background-size: 300% 300%;
+  animation: gradientShift 12s ease infinite;
+}
+
+/* ═══════════════════════════════════════
+   GLASSMORPHISM
+═══════════════════════════════════════ */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+.glass-dark {
+  background: rgba(15, 42, 28, 0.8);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.glass-white {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+/* ═══════════════════════════════════════
+   CARD & BUTTON EFFECTS
+═══════════════════════════════════════ */
+.card-hover {
+  transition: transform 0.4s var(--ease-spring), box-shadow 0.4s var(--ease-smooth);
+}
+.card-hover:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-xl);
+}
+.card-hover-sm {
+  transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-smooth);
+}
+.card-hover-sm:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s var(--ease-spring);
+}
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.btn-primary:hover::after { opacity: 1; }
+.btn-primary:hover { 
+  transform: translateY(-2px); 
+  box-shadow: var(--shadow-green); 
+}
+.btn-primary:active { 
+  transform: translateY(1px) scale(0.98); 
+}
+
+/* ═══════════════════════════════════════
+   INPUT LIFT
+═══════════════════════════════════════ */
+.input-field {
+  width: 100%;
+  padding: 14px 20px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.25s var(--ease-smooth);
+}
+.input-field:focus {
+  background: #ffffff;
+  border-color: var(--green-main);
+  box-shadow: 0 0 0 4px rgba(22,33,62,0.1);
+  transform: translateY(-2px);
+}
+.input-field::placeholder { color: #94a3b8; }
+
+/* ═══════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════ */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.styled-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.styled-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.styled-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(22,33,62,0.25);
+  border-radius: 99px;
+}
+.styled-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(22,33,62,0.45); }
+
+/* ═══════════════════════════════════════
+   REDUCE MOTION SAFETY
+═══════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
