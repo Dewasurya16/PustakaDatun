@@ -134,7 +134,7 @@ export default function BookingAdminPage() {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
               <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.25em] mb-1">
-                E-Perpustakaan · Pustaka Datun Kejaksaan Agung
+                Pustaka Datun Kejaksaan Agung
               </p>
               <h1 className="text-3xl font-black text-white leading-tight">
                 Manajemen Sirkulasi

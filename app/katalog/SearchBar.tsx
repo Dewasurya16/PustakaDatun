@@ -1,27 +1,23 @@
 'use client';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
 export default function SearchBar() {
-  const router       = useRouter();
-  const pathname     = usePathname();
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
-  const [isFocused,  setIsFocused]  = useState(false);
-  // Gunakan ref agar debounce tidak bergantung pada stale closure
   const latestTerm = useRef(searchTerm);
 
-  // Sync saat URL berubah dari luar (misal: back/forward browser)
   useEffect(() => {
-    const urlQ = searchParams.get('q') || '';
-    if (urlQ !== latestTerm.current) {
-      setSearchTerm(urlQ);
-      latestTerm.current = urlQ;
+    const urlQuery = searchParams.get('q') || '';
+    if (urlQuery !== latestTerm.current) {
+      setSearchTerm(urlQuery);
+      latestTerm.current = urlQuery;
     }
   }, [searchParams]);
 
-  // Debounce 500ms — lebih panjang dari sebelumnya (300ms) untuk kurangi lag
   useEffect(() => {
     latestTerm.current = searchTerm;
     const timer = setTimeout(() => {
@@ -31,46 +27,69 @@ export default function SearchBar() {
       } else {
         params.delete('q');
       }
-      // Reset ke halaman 1 saat cari
       params.delete('page');
-      // Gunakan replace agar tidak menumpuk history browser
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    }, 500);
+      const queryString = params.toString();
+      router.replace(
+        queryString ? `${pathname}?${queryString}` : pathname,
+        { scroll: false },
+      );
+    }, 450);
 
     return () => clearTimeout(timer);
-    // searchParams sengaja tidak dimasukkan deps agar tidak looping
+    // searchParams intentionally omitted to avoid replacing the URL on every navigation sync.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, pathname, router]);
 
-  const handleClear = () => {
-    setSearchTerm('');
-  };
-
   return (
-    <div className="relative w-full flex-1 group">
-      <div className={`absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none transition-transform ${isFocused ? 'scale-110' : ''}`}>
-        <span className="text-blue-400 text-lg">🔍</span>
+    <div className="relative w-full">
+      {/* Search icon */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-neutral-400">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" />
+        </svg>
       </div>
 
       <input
         type="text"
-        placeholder="Cari referensi, aturan, penulis, dsb..."
+        placeholder="Cari judul, penulis..."
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        className="w-full pl-12 pr-10 h-14 bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 text-white placeholder-blue-100/50 rounded-2xl focus:bg-white/20 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-bold text-sm shadow-inner"
+        onChange={(event) => setSearchTerm(event.target.value)}
+        className="h-11 w-full rounded-lg border border-neutral-200 bg-neutral-50/60 pl-11 pr-10 text-[13px] font-medium text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-900/5"
       />
 
-      {/* Tombol clear */}
+      {/* Clear button */}
       {searchTerm && (
         <button
           type="button"
-          onClick={handleClear}
-          className="absolute inset-y-0 right-4 flex items-center text-white/40 hover:text-white transition-colors text-xl leading-none"
+          onClick={() => setSearchTerm('')}
+          className="absolute inset-y-0 right-3 flex items-center text-neutral-300 transition-colors hover:text-neutral-600"
           aria-label="Hapus pencarian"
         >
-          ×
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
         </button>
       )}
     </div>

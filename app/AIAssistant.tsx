@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 const QUICK_PROMPTS = [
-  { icon: '🔍', label: 'Cari Buku Pidana',  text: 'Tolong carikan rekomendasi buku terkait Hukum Pidana yang ada di perpustakaan.' },
+  { icon: '🔍', label: 'Cari Peraturan',    text: 'Tolong carikan rekomendasi buku kategori Peraturan yang ada di perpustakaan.' },
   { icon: '📚', label: 'Pinjam Buku',        text: 'Saya ingin meminjam buku. Tolong bantu saya.' },
   { icon: '👥', label: 'Info Pegawai',        text: 'Saya ingin mencari data pegawai di kantor ini.' },
   { icon: '📅', label: 'Cek Aturan Pinjam',  text: 'Berapa lama batas waktu peminjaman buku untuk pegawai, dan apa sanksinya jika terlambat?' },
@@ -24,7 +24,7 @@ export default function AIAssistant() {
     if (messages.length === 0) {
       setMessages([{
         role: 'ai',
-        text: 'Halo! Saya **Lexi**, Asisten Pintar E-Perpus Pustaka Datun Kejaksaan Agung. 🤖\n\nSaya bisa membantu Anda mencari buku, **meminjam langsung lewat chat ini**, hingga cek info pegawai. Silakan ketik atau pilih menu cepat di bawah:',
+        text: 'Halo! Saya **Lexi**, Asisten Pintar Pustaka Datun Kejaksaan Agung. 🤖\n\nSaya bisa membantu Anda mencari buku, **meminjam langsung lewat chat ini**, hingga cek info pegawai. Silakan ketik atau pilih menu cepat di bawah:',
       }]);
     }
   }, [messages.length]);
@@ -50,7 +50,7 @@ export default function AIAssistant() {
       if (!res.ok) {
         setMessages((prev) => [...prev, {
           role: 'ai',
-          text: 'Aduh, otak AI saya sedang kepanasan nih! 🤯 Sistem Google mendeteksi terlalu banyak pesan dalam 1 menit terakhir. Mohon beri saya waktu istirahat sekitar 1 menit, lalu tanyakan lagi ya, Bos!',
+          text: 'Aduh, otak AI saya sedang kepanasan nih! 🤯 Layanan AI mendeteksi terlalu banyak pesan dalam 1 menit terakhir. Mohon beri saya waktu istirahat sekitar 1 menit, lalu tanyakan lagi ya, Bos!',
         }]);
         return;
       }

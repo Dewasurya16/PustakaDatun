@@ -1,33 +1,53 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 export default function SortDropdown() {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentSort = searchParams.get('sort') || 'terbaru';
 
-  const handleSort = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleSort = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set('sort', e.target.value);
-    router.push(`?${params.toString()}`);
+    params.set('sort', value);
+    params.delete('page');
+    const queryString = params.toString();
+    router.push(
+      queryString ? `${pathname}?${queryString}` : pathname,
+      { scroll: false },
+    );
   };
 
   return (
-    <div className="relative h-14 w-[140px] flex-shrink-0 group">
+    <div className="relative">
       <select
         value={currentSort}
-        onChange={handleSort}
-        className="w-full h-full px-4 bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400 font-bold text-[10px] uppercase tracking-widest cursor-pointer appearance-none transition-all shadow-inner"
+        onChange={(event) => handleSort(event.target.value)}
+        aria-label="Urutkan katalog"
+        className="h-11 w-full cursor-pointer appearance-none rounded-lg border border-neutral-200 bg-neutral-50/60 px-4 pr-10 text-[13px] font-medium text-neutral-800 outline-none transition-all focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-900/5"
       >
-        <option value="terbaru" className="text-slate-800 font-bold">✨ Terbaru</option>
-        <option value="abjad" className="text-slate-800 font-bold">🔤 Abjad (A-Z)</option>
-        <option value="stok" className="text-slate-800 font-bold">📚 Stok Terbanyak</option>
+        <option value="terbaru">Terbaru</option>
+        <option value="abjad">Abjad A–Z</option>
+        <option value="stok">Stok Terbanyak</option>
       </select>
-      {/* Ikon panah khusus karena appearance-none */}
-      <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-        <span className="text-white/50 text-xs group-hover:text-white transition-colors">▼</span>
-      </div>
+
+      {/* Chevron icon */}
+      <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </span>
     </div>
   );
 }

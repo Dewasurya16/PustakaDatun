@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import QRCodeModal from './dashboard/QRCodeModal';
 import BorrowModal from './katalog/BorrowModal';
 import Link from 'next/link';
+import { MASTER_CATEGORY_NAMES } from '../lib/categories';
 
 // Field ringkasan diambil dari kolom `ringkasan` di tabel `books` Supabase.
 // Pastikan kolom tersebut sudah ada: ALTER TABLE books ADD COLUMN ringkasan text;
@@ -18,82 +19,133 @@ type Book = {
   stock: number;
   rak?: string;
   pdf_url?: string;
-  ringkasan?: string;   // ← field baru
+  ringkasan?: string;
   rating?: number;
   rating_count?: number;
   created_at?: string;
 };
 
-// ── Warna aksen per kategori ──────────────────────────────────
-const CATEGORY_COLORS: Record<string, string> = {
-  'hukum pidana':  '#16213E',
-  'hukum perdata': '#1e40af',
-  'tata negara':   '#92400e',
-  'administrasi':  '#5b21b6',
-  'perundangan':   '#9d174d',
-  'umum':          '#374151',
-};
+/* ── Category accent colors ───────────────────────────── */
+
 function getCategoryColor(cat?: string) {
   const lower = (cat || '').toLowerCase();
-  return CATEGORY_COLORS[lower] || 'var(--green-main)';
+  if (lower.includes('peraturan') || lower.includes('legislasi'))
+    return '#1d4ed8';
+  if (lower.includes('litigasi') || lower.includes('perkara'))
+    return '#be123c';
+  if (lower.includes('korporasi')) return '#d97706';
+  if (lower.includes('pengadaan')) return '#15803d';
+  if (lower.includes('perjanjian') || lower.includes('kerja sama'))
+    return '#0f766e';
+  if (
+    lower.includes('pelatihan') ||
+    lower.includes('paparan') ||
+    lower.includes('rakernas')
+  )
+    return '#6d28d9';
+  if (lower.includes('thl')) return '#b45309';
+  return 'var(--green-main)';
 }
 
-// ── Komponen bintang rating ───────────────────────────────────
-function StarRating({ rating, count }: { rating?: number; count?: number }) {
+/* ── Star rating ──────────────────────────────────────── */
+
+function StarRating({
+  rating,
+  count,
+}: {
+  rating?: number;
+  count?: number;
+}) {
   if (!rating || rating === 0) return null;
   const r = Math.round(rating * 2) / 2;
   return (
     <div className="flex items-center gap-1">
-      {[1,2,3,4,5].map((s) => (
-        <svg key={s} className={`w-3 h-3 ${s <= r ? 'text-yellow-400' : 'text-slate-200'}`} fill="currentColor" viewBox="0 0 20 20">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <svg
+          key={s}
+          className={`h-3.5 w-3.5 ${
+            s <= r ? 'text-amber-400' : 'text-neutral-200'
+          }`}
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
         </svg>
       ))}
-      {count ? <span className="text-[9px] text-slate-400 font-bold ml-0.5">({count})</span> : null}
+      {count ? (
+        <span className="ml-0.5 text-[10px] font-semibold text-neutral-400">
+          ({count})
+        </span>
+      ) : null}
     </div>
   );
 }
 
-// ── Kartu buku ────────────────────────────────────────────────
-function BookCard({ book, isLoggedIn, userEmail }: { book: Book; isLoggedIn: boolean; userEmail?: string }) {
-  const [expanded, setExpanded] = useState(false);
+/* ── Book card ────────────────────────────────────────── */
+
+function BookCard({
+  book,
+  isLoggedIn,
+  userEmail,
+}: {
+  book: Book;
+  isLoggedIn: boolean;
+  userEmail?: string;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const color = getCategoryColor(book.category);
   const hasRingkasan = !!book.ringkasan;
+  const isOutOfStock = book.stock <= 0;
 
   return (
-    <div className="reveal group bg-white rounded-[1.25rem] border border-slate-200 p-1 shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:border-slate-300 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden">
+    <div className="group flex flex-col overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] hover:ring-1 hover:ring-neutral-200">
       {/* Gradient top strip */}
       <div
         className="h-[3px] w-full flex-shrink-0"
-        style={{ background: `linear-gradient(90deg, ${color}, ${color}80, transparent)` }}
+        style={{
+          background: `linear-gradient(90deg, ${color}, ${color}80, transparent)`,
+        }}
       />
-      <div className="p-4 flex flex-col flex-1 gap-3">
-        {/* Category + stock */}
+
+      <div className="flex flex-1 flex-col gap-3 p-4">
+        {/* Category + stock badges */}
         <div className="flex items-start justify-between gap-2">
           <span
-            className="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border"
-            style={{ color, borderColor: `${color}30`, backgroundColor: `${color}10` }}
+            className="rounded-md px-2 py-1 text-[9px] font-bold uppercase tracking-wider"
+            style={{
+              color,
+              borderColor: `${color}25`,
+              backgroundColor: `${color}08`,
+              border: `1px solid ${color}20`,
+            }}
           >
             {book.category || 'Umum'}
           </span>
-          <span className={`text-[9px] font-black px-2 py-1 rounded-lg border ${
-            book.stock > 0
-              ? 'text-blue-700 bg-blue-50 border-blue-100'
-              : 'text-red-500 bg-red-50 border-red-100'
-          }`}>
-            {book.stock > 0 ? `${book.stock} Stok` : 'Habis'}
+          <span
+            className={`rounded-md px-2 py-1 text-[10px] font-bold ${
+              isOutOfStock
+                ? 'bg-rose-50 text-rose-600 ring-1 ring-rose-200/60'
+                : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60'
+            }`}
+          >
+            {isOutOfStock ? 'Habis' : `${book.stock} Stok`}
           </span>
         </div>
 
-        {/* Judul */}
+        {/* Title */}
         <div>
-          <Link href={`/buku/${book.id}`} className="group-hover:underline decoration-[var(--green-main)] decoration-2 underline-offset-2">
-            <h3 className="font-black text-slate-800 text-[14px] leading-snug line-clamp-2 group-hover:text-[var(--green-main)] transition-colors">
+          <Link
+            href={`/buku/${book.id}`}
+            className="group-hover:underline decoration-[var(--green-main)] decoration-2 underline-offset-2"
+          >
+            <h3 className="line-clamp-2 text-[14px] font-bold leading-snug text-neutral-900 transition-colors group-hover:text-[var(--green-main)]">
               {book.title}
             </h3>
           </Link>
           {book.author && (
-            <p className="text-[10px] text-slate-400 font-semibold mt-1">oleh {book.author}</p>
+            <p className="mt-1 text-[11px] font-medium text-neutral-400">
+              oleh {book.author}
+            </p>
           )}
         </div>
 
@@ -103,40 +155,58 @@ function BookCard({ book, isLoggedIn, userEmail }: { book: Book; isLoggedIn: boo
         {/* Metadata grid */}
         <div className="grid grid-cols-2 gap-2">
           {book.rak && (
-            <div className="bg-slate-50 rounded-xl px-2.5 py-2 border border-slate-100">
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Rak</p>
-              <p className="text-[11px] font-black text-slate-700">📍 {book.rak}</p>
+            <div className="rounded-lg border border-neutral-100 bg-neutral-50/80 px-2.5 py-2">
+              <p className="text-[8px] font-bold uppercase tracking-widest text-neutral-400">
+                Rak
+              </p>
+              <p className="text-[11px] font-bold text-neutral-700">
+                📍 {book.rak}
+              </p>
             </div>
           )}
           {book.nomor_buku && (
-            <div className="bg-slate-50 rounded-xl px-2.5 py-2 border border-slate-100">
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">No. Buku</p>
-              <p className="text-[11px] font-black text-slate-700">{book.nomor_buku}</p>
+            <div className="rounded-lg border border-neutral-100 bg-neutral-50/80 px-2.5 py-2">
+              <p className="text-[8px] font-bold uppercase tracking-widest text-neutral-400">
+                No. Buku
+              </p>
+              <p className="text-[11px] font-bold text-neutral-700">
+                {book.nomor_buku}
+              </p>
             </div>
           )}
         </div>
 
         {/* Ringkasan / Summary */}
         {hasRingkasan && (
-          <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Ringkasan</p>
-            <p className={`text-[11px] text-slate-600 leading-relaxed font-medium ${expanded ? '' : 'line-clamp-3'}`}>
+          <div className="rounded-lg border border-neutral-100 bg-neutral-50/80 p-3">
+            <p className="mb-1.5 text-[8px] font-bold uppercase tracking-widest text-neutral-400">
+              Ringkasan
+            </p>
+            <p
+              className={`text-[11px] font-medium leading-relaxed text-neutral-600 ${
+                isExpanded ? '' : 'line-clamp-3'
+              }`}
+            >
               {book.ringkasan}
             </p>
             {book.ringkasan && book.ringkasan.length > 120 && (
               <button
-                onClick={() => setExpanded(!expanded)}
-                className="text-[9px] font-black text-blue-600 uppercase tracking-widest mt-1.5 hover:text-blue-800 transition-colors"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="mt-1.5 text-[10px] font-bold text-neutral-500 transition-colors hover:text-neutral-800"
               >
-                {expanded ? '▲ Ringkas' : '▼ Selengkapnya'}
+                {isExpanded ? '▲ Ringkas' : '▼ Selengkapnya'}
               </button>
             )}
           </div>
         )}
 
         {/* Action buttons */}
-        <div className="flex flex-col gap-2 mt-auto pt-2 border-t border-slate-50">
-          <QRCodeModal book={book} isLoggedIn={isLoggedIn} userEmail={userEmail} />
+        <div className="mt-auto flex flex-col gap-2 border-t border-neutral-50 pt-3">
+          <QRCodeModal
+            book={book}
+            isLoggedIn={isLoggedIn}
+            userEmail={userEmail}
+          />
 
           {isLoggedIn && userEmail ? (
             <BorrowModal book={book} userEmail={userEmail} />
@@ -145,7 +215,7 @@ function BookCard({ book, isLoggedIn, userEmail }: { book: Book; isLoggedIn: boo
               href={book.pdf_url}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 py-2.5 text-[10px] font-bold uppercase tracking-wider text-blue-600 transition-all hover:-translate-y-0.5 hover:bg-blue-600 hover:text-white hover:shadow-md"
             >
               📖 Baca E-Book
             </a>
@@ -156,7 +226,29 @@ function BookCard({ book, isLoggedIn, userEmail }: { book: Book; isLoggedIn: boo
   );
 }
 
-// ── Komponen Utama BookGrid ───────────────────────────────────
+/* ── Chevron icon for dropdowns ───────────────────────── */
+
+function ChevronDown() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="text-neutral-400"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+/* ── Main BookGrid component ──────────────────────────── */
+
 export default function BookGrid({
   books,
   isLoggedIn,
@@ -166,114 +258,166 @@ export default function BookGrid({
   isLoggedIn: boolean;
   userEmail?: string;
 }) {
-  const [search,   setSearch]   = useState('');
+  const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
-  const [sort,     setSort]     = useState<'terbaru' | 'abjad' | 'stok'>('terbaru');
-  const [page,     setPage]     = useState(1);
-  const PER_PAGE = 12;
-
-  const categories = useMemo(
-    () => [...new Set(books.map((b) => b.category).filter(Boolean))] as string[],
-    [books]
+  const [sort, setSort] = useState<'terbaru' | 'abjad' | 'stok'>(
+    'terbaru',
   );
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 12;
 
   const filtered = useMemo(() => {
     let list = books;
 
-    // Filter kategori
-    if (category) list = list.filter((b) => b.category === category);
+    if (category)
+      list = list.filter((b) => b.category === category);
 
-    // Filter pencarian (judul, penulis, kategori, ringkasan)
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter((b) =>
-        b.title.toLowerCase().includes(q) ||
-        (b.author || '').toLowerCase().includes(q) ||
-        (b.category || '').toLowerCase().includes(q) ||
-        (b.ringkasan || '').toLowerCase().includes(q)
+      list = list.filter(
+        (b) =>
+          b.title.toLowerCase().includes(q) ||
+          (b.author || '').toLowerCase().includes(q) ||
+          (b.category || '').toLowerCase().includes(q) ||
+          (b.ringkasan || '').toLowerCase().includes(q),
       );
     }
 
-    // Sort
-    if (sort === 'abjad') list = [...list].sort((a, b) => a.title.localeCompare(b.title));
-    else if (sort === 'stok') list = [...list].sort((a, b) => b.stock - a.stock);
+    if (sort === 'abjad')
+      list = [...list].sort((a, b) =>
+        a.title.localeCompare(b.title),
+      );
+    else if (sort === 'stok')
+      list = [...list].sort((a, b) => b.stock - a.stock);
 
     return list;
   }, [books, category, search, sort]);
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
-  const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const paginated = filtered.slice(
+    (page - 1) * PER_PAGE,
+    page * PER_PAGE,
+  );
 
   const resetPage = () => setPage(1);
 
   return (
     <div className="space-y-6">
-      {/* Filter bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col sm:flex-row gap-3">
-        {/* Search */}
-        <div className="relative flex-1">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-400 text-base">🔍</span>
-          <input
-            type="text"
-            placeholder="Cari judul, penulis, atau ringkasan..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); resetPage(); }}
-            className="w-full pl-10 pr-4 h-11 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-medium text-sm focus:ring-2 focus:ring-blue-400 focus:bg-white outline-none transition-all"
-          />
+      {/* ── Filter bar ── */}
+      <div className="rounded-xl border border-neutral-100 bg-white p-4 shadow-[0_4px_16px_rgba(0,0,0,0.04)]">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          {/* Search */}
+          <div className="relative flex-1">
+            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+            </span>
+            <input
+              type="text"
+              placeholder="Cari judul, penulis, atau ringkasan..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                resetPage();
+              }}
+              className="h-11 w-full rounded-lg border border-neutral-200 bg-neutral-50/60 pl-10 pr-4 text-[13px] font-medium text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-900/5"
+            />
+          </div>
+
+          {/* Category dropdown */}
+          <div className="relative">
+            <select
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                resetPage();
+              }}
+              className="h-11 w-full cursor-pointer appearance-none rounded-lg border border-neutral-200 bg-neutral-50/60 px-4 pr-10 text-[13px] font-medium text-neutral-800 outline-none transition-all focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-900/5 sm:w-auto sm:min-w-[180px]"
+            >
+              <option value="">Semua Kategori</option>
+              {MASTER_CATEGORY_NAMES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+              <ChevronDown />
+            </span>
+          </div>
+
+          {/* Sort dropdown */}
+          <div className="relative">
+            <select
+              value={sort}
+              onChange={(e) => {
+                setSort(
+                  e.target.value as 'terbaru' | 'abjad' | 'stok',
+                );
+                resetPage();
+              }}
+              className="h-11 w-full cursor-pointer appearance-none rounded-lg border border-neutral-200 bg-neutral-50/60 px-4 pr-10 text-[13px] font-medium text-neutral-800 outline-none transition-all focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-900/5 sm:w-auto sm:min-w-[160px]"
+            >
+              <option value="terbaru">✨ Terbaru</option>
+              <option value="abjad">🔤 A–Z</option>
+              <option value="stok">📚 Stok Terbanyak</option>
+            </select>
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+              <ChevronDown />
+            </span>
+          </div>
         </div>
-
-        {/* Kategori */}
-        <select
-          value={category}
-          onChange={(e) => { setCategory(e.target.value); resetPage(); }}
-          className="h-11 px-4 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl font-bold text-[11px] uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-400 transition-all cursor-pointer"
-        >
-          <option value="">Semua Kategori</option>
-          {categories.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-
-        {/* Sort */}
-        <select
-          value={sort}
-          onChange={(e) => { setSort(e.target.value as any); resetPage(); }}
-          className="h-11 px-4 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl font-bold text-[11px] uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-400 transition-all cursor-pointer"
-        >
-          <option value="terbaru">✨ Terbaru</option>
-          <option value="abjad">🔤 A–Z</option>
-          <option value="stok">📚 Stok Terbanyak</option>
-        </select>
       </div>
 
-      {/* Result count */}
+      {/* ── Result count ── */}
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+        <p className="text-[12px] font-semibold text-neutral-400">
           {filtered.length} buku ditemukan
-          {search && <span className="text-blue-600"> · "{search}"</span>}
+          {search && (
+            <span className="text-neutral-600"> · &quot;{search}&quot;</span>
+          )}
         </p>
         {totalPages > 1 && (
-          <p className="text-[11px] font-bold text-slate-400">
+          <p className="text-[12px] font-medium text-neutral-400">
             Halaman {page} / {totalPages}
           </p>
         )}
       </div>
 
-      {/* Grid */}
+      {/* ── Grid ── */}
       {paginated.length === 0 ? (
-        <div className="py-20 text-center bg-white rounded-2xl border border-dashed border-slate-200">
-          <p className="text-4xl mb-4">📚</p>
-          <p className="font-black text-slate-500 text-base">Buku tidak ditemukan</p>
-          <p className="text-[12px] text-slate-400 font-medium mt-2">Coba kata kunci atau filter yang berbeda</p>
+        <div className="rounded-xl border border-dashed border-neutral-200 bg-white py-20 text-center">
+          <p className="text-4xl">📚</p>
+          <p className="mt-4 text-base font-semibold text-neutral-600">
+            Buku tidak ditemukan
+          </p>
+          <p className="mt-2 text-[12px] font-medium text-neutral-400">
+            Coba kata kunci atau filter yang berbeda
+          </p>
           <button
-            onClick={() => { setSearch(''); setCategory(''); }}
-            className="mt-5 px-5 py-2.5 bg-blue-50 text-blue-700 rounded-xl font-black text-[10px] uppercase tracking-widest border border-blue-200 hover:bg-blue-100 transition-colors"
+            onClick={() => {
+              setSearch('');
+              setCategory('');
+            }}
+            className="mt-5 rounded-lg border border-neutral-200 bg-white px-5 py-2.5 text-[11px] font-bold text-neutral-700 transition-all hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-sm"
           >
             Reset Filter
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {paginated.map((book) => (
             <BookCard
               key={book.id}
@@ -285,15 +429,28 @@ export default function BookGrid({
         </div>
       )}
 
-      {/* Pagination */}
+      {/* ── Pagination ── */}
       {totalPages > 1 && (
-        <div className="flex justify-center gap-2 pt-4">
+        <div className="flex justify-center gap-1.5 pt-4">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-[11px] font-black text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-600 transition-all hover:border-neutral-300 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Halaman sebelumnya"
           >
-            ← Prev
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
           </button>
 
           {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -302,23 +459,37 @@ export default function BookGrid({
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className={`w-10 h-9 rounded-xl text-[11px] font-black transition-colors ${
+                className={`inline-flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg px-2 text-[13px] font-semibold transition-all ${
                   p === page
-                    ? 'bg-[#16213E] text-white shadow-md'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-neutral-900 text-white shadow-sm'
+                    : 'border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50'
                 }`}
               >
                 {p}
               </button>
-            ))
-          }
+            ))}
 
           <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            onClick={() =>
+              setPage((p) => Math.min(totalPages, p + 1))
+            }
             disabled={page === totalPages}
-            className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-[11px] font-black text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-600 transition-all hover:border-neutral-300 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Halaman selanjutnya"
           >
-            Next →
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
           </button>
         </div>
       )}

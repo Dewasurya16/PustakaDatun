@@ -52,11 +52,21 @@ function SourceBadge({ via }: { via?: string | null }) {
   return null;
 }
 
-export default async function DashboardPage(props: any) {
-  const searchParams = await props.searchParams;
-  const activeTab    = searchParams?.tab         || 'overview';
+type DashboardSearchParams = {
+  tab?: string | string[];
+  filter?: string | string[];
+};
+
+function getSearchParam(value: string | string[] | undefined) {
+  if (Array.isArray(value)) return value[0] || '';
+  return value || '';
+}
+
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<DashboardSearchParams> }) {
+  const params = await searchParams;
+  const activeTab    = getSearchParam(params?.tab) || 'overview';
   // Filter sirkulasi: 'semua' | 'DIPINJAM' | 'DIKEMBALIKAN' | 'ai_only'
-  const sirkulasiFilter = searchParams?.filter   || 'semua';
+  const sirkulasiFilter = getSearchParam(params?.filter) || 'semua';
 
   const cookieStore = await cookies();
   const session   = cookieStore.get('session')?.value;
@@ -160,7 +170,7 @@ export default async function DashboardPage(props: any) {
             />
           </div>
           <div>
-            <h1 className="text-sm font-black uppercase tracking-tight text-slate-900 leading-none">E-Perpus</h1>
+            <h1 className="text-sm font-black uppercase tracking-tight text-slate-900 leading-none">Pustaka Datun</h1>
             <p className="text-[9px] font-bold text-blue-600 uppercase tracking-widest mt-1">Administrator</p>
           </div>
         </div>
@@ -209,13 +219,13 @@ export default async function DashboardPage(props: any) {
         </nav>
 
         <div className="p-4 border-t border-slate-100">
-          <div className="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-blue-50 to-slate-50 rounded-xl border border-blue-100/50">
-            <div className="w-8 h-8 bg-gradient-to-br from-[var(--green-main)] to-blue-600 text-white rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 shadow-md shadow-blue-900/20">
+          <div className="grid grid-cols-[40px_minmax(0,1fr)] items-center gap-3 rounded-xl border border-blue-100/70 bg-gradient-to-r from-blue-50 to-slate-50 px-3 py-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--green-main)] to-blue-600 text-[12px] font-black text-white shadow-md shadow-blue-900/20 ring-2 ring-white">
               {userEmail.charAt(0).toUpperCase()}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-black text-slate-800 truncate">{userEmail}</p>
-              <p className="text-[8px] font-bold text-blue-600 uppercase tracking-widest">Administrator</p>
+            <div className="min-w-0 overflow-hidden">
+              <p className="truncate text-[11px] font-black leading-4 text-slate-800">{userEmail}</p>
+              <p className="truncate text-[9px] font-bold uppercase leading-4 text-blue-600">Administrator</p>
             </div>
           </div>
         </div>
@@ -224,10 +234,10 @@ export default async function DashboardPage(props: any) {
       {/* ══════════════════════════════════════════
           AREA KANAN
       ══════════════════════════════════════════ */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col h-screen overflow-hidden">
 
         {/* Header */}
-        <header className="h-16 bg-white border-b border-slate-200/60 flex items-center justify-between px-4 sm:px-8 z-40 flex-shrink-0">
+        <header className="h-16 min-w-0 bg-white border-b border-slate-200/60 flex items-center justify-between px-4 sm:px-8 z-40 flex-shrink-0">
           <div className="lg:hidden flex items-center gap-3">
            <div className="w-8 h-8 relative flex-shrink-0 bg-white rounded-full p-0.5 shadow-sm border border-slate-100">
               <Image 
@@ -253,8 +263,8 @@ export default async function DashboardPage(props: any) {
         </header>
 
         {/* ── Main Content ────────────────────────────────────────────── */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-10 scroll-smooth">
-          <div className="max-w-[1300px] mx-auto">
+        <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 pb-28 scroll-smooth sm:p-6 lg:p-6 lg:pb-10">
+          <div className={activeTab === 'buku' ? 'w-full min-w-0 max-w-none' : 'mx-auto max-w-[1300px]'}>
 
             {/* ════════════════════════
                 TAB: OVERVIEW
@@ -362,7 +372,7 @@ export default async function DashboardPage(props: any) {
                           ✅ Semua sirkulasi berjalan lancar
                         </div>
                       ) : overdueLoans.map(loan => {
-                        const daysLate = Math.floor((Date.now() - new Date(loan.due_date).getTime()) / 86400000);
+                        const daysLate = Math.floor((today.getTime() - new Date(loan.due_date).getTime()) / 86400000);
                         return (
                           <div key={loan.id} className="flex items-center justify-between p-4 bg-rose-50/50 border border-rose-100 rounded-xl gap-3">
                             <div className="flex-1 min-w-0">

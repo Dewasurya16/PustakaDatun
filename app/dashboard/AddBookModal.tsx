@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import GlobalActionLoading from '../components/GlobalActionLoading';
+import { MASTER_CATEGORY_NAMES } from '../../lib/categories';
 
 /* ── Spinner ───────────────────────────────────────────────────────────── */
 function Spinner() {
@@ -40,7 +41,6 @@ const inputCls =
 /* ════════════════════════════════════════════════════════════════════════ */
 export default function AddBookModal() {
   const [isOpen,    setIsOpen]    = useState(false);
-  const [mounted,   setMounted]   = useState(false);
   const [title,     setTitle]     = useState('');
   const [author,    setAuthor]    = useState('');
   const [publisher, setPublisher] = useState('');
@@ -52,8 +52,6 @@ export default function AddBookModal() {
   const [ringkasan, setRingkasan] = useState('');
   const [loading,   setLoading]   = useState(false);
   const router = useRouter();
-
-  useEffect(() => { setMounted(true); }, []);
 
   /* Kunci scroll body */
   useEffect(() => {
@@ -91,17 +89,14 @@ export default function AddBookModal() {
   const trigger = (
     <button
       onClick={() => setIsOpen(true)}
-      className="w-full sm:w-auto inline-flex items-center justify-center gap-2
-                 bg-white/15 hover:bg-white/25 border border-white/30 hover:border-white/50
-                 text-white px-5 py-2.5 rounded-xl font-bold text-sm
-                 transition-all shadow-md backdrop-blur-sm"
+      className="inline-flex h-11 w-full min-w-0 items-center justify-center whitespace-nowrap rounded-md bg-neutral-950 px-4 text-[12px] font-bold text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition hover:bg-neutral-800"
     >
-      <span className="text-base">＋</span> Tambah Buku Baru
+      [+] Tambah Buku Baru
     </button>
   );
 
   /* ── Modal via Portal ────────────────────────────────────────────── */
-  const modal = isOpen && mounted && createPortal(
+  const modal = isOpen && typeof document !== 'undefined' && createPortal(
     <>
       <style>{`
         @keyframes spin    { to { transform: rotate(360deg); } }
@@ -118,18 +113,17 @@ export default function AddBookModal() {
       />
 
       {/* Scroll container */}
-      <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center
-                      p-4 overflow-y-auto">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5">
         <div
           style={{ animation: 'slideUp .22s cubic-bezier(.34,1.56,.64,1)' }}
-          className="relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl my-4 sm:my-8 overflow-hidden"
+          className="relative flex max-h-[calc(100vh-24px)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[calc(100vh-40px)]"
           onClick={e => e.stopPropagation()}
         >
           {/* Loading overlay */}
           <GlobalActionLoading isVisible={loading} text="Menyimpan buku..." />
 
           {/* ── Header ──────────────────────────────────────────────── */}
-          <div className="flex items-center justify-between px-6 py-4"
+          <div className="flex shrink-0 items-center justify-between px-5 py-4 sm:px-6"
                style={{ background: 'linear-gradient(135deg,#16213E,#2D6A4F)' }}>
             <div>
               <p className="text-blue-300 text-[9px] font-black uppercase tracking-widest mb-0.5">
@@ -142,18 +136,19 @@ export default function AddBookModal() {
               className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10
                          hover:bg-white/20 text-white/70 hover:text-white font-bold
                          transition-all text-lg"
-            >✕</button>
+            >x</button>
           </div>
 
           {/* ── Form ────────────────────────────────────────────────── */}
-          <form onSubmit={handleAddBook} className="p-6 space-y-5">
+          <form onSubmit={handleAddBook} className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 styled-scrollbar">
 
             {/* Judul */}
             <Field label="Judul Buku">
               <input required type="text" value={title}
                 onChange={e => setTitle(e.target.value)}
                 className={inputCls}
-                placeholder="Contoh: KUHP Edisi Revisi…" />
+                placeholder="Contoh: KUHP Edisi Revisi..." />
             </Field>
 
             {/* ISBN + Klasifikasi */}
@@ -170,20 +165,11 @@ export default function AddBookModal() {
                   className={inputCls}
                 >
                   <option value="" disabled>Pilih Kategori...</option>
-                  <option value="Buku Datun">Buku Datun</option>
-                  <option value="Materi Paparan Jamdatun">Materi Paparan Jamdatun</option>
-                  <option value="Peraturan">Peraturan</option>
-                  <option value="Pengetahuan penunjang">Pengetahuan penunjang</option>
-                  <option value="Berkas perkara lengkap">Berkas perkara lengkap</option>
-                  <option value="LO kebijakan dan legislasi">LO kebijakan dan legislasi</option>
-                  <option value="LO korporasi">LO korporasi</option>
-                  <option value="LO litigasi">LO litigasi</option>
-                  <option value="LO pengadaan - pbj">LO pengadaan - pbj</option>
-                  <option value="LO perjanjian">LO perjanjian</option>
-                  <option value="Materi pelatihan">Materi pelatihan</option>
-                  <option value="Perjanjian kerja sama">Perjanjian kerja sama</option>
-                  <option value="Laporan perkembangan THL">Laporan perkembangan THL</option>
-                  <option value="Materi Rakernas">Materi Rakernas</option>
+                  {MASTER_CATEGORY_NAMES.map((categoryName) => (
+                    <option key={categoryName} value={categoryName}>
+                      {categoryName}
+                    </option>
+                  ))}
                 </select>
               </Field>
             </div>
@@ -194,13 +180,13 @@ export default function AddBookModal() {
                 <input required type="text" value={author}
                   onChange={e => setAuthor(e.target.value)}
                   className={inputCls}
-                  placeholder="Nama penulis…" />
+                  placeholder="Nama penulis..." />
               </Field>
               <Field label="Penerbit" hint="opsional">
                 <input type="text" value={publisher}
                   onChange={e => setPublisher(e.target.value)}
                   className={inputCls}
-                  placeholder="Nama penerbit…" />
+                  placeholder="Nama penerbit..." />
               </Field>
             </div>
 
@@ -215,7 +201,7 @@ export default function AddBookModal() {
                 <input type="text" value={rak}
                   onChange={e => setRak(e.target.value)}
                   className={inputCls}
-                  placeholder="Mis. A-1, B-3…" />
+                  placeholder="Mis. A-1, B-3..." />
               </Field>
             </div>
 
@@ -226,7 +212,7 @@ export default function AddBookModal() {
                 value={ringkasan}
                 onChange={e => setRingkasan(e.target.value)}
                 className={`${inputCls} resize-none`}
-                placeholder="Tuliskan ringkasan isi buku agar mudah dicari peminjam…"
+                placeholder="Tuliskan ringkasan isi buku agar mudah dicari peminjam..."
               />
               <p className="text-[10px] text-slate-400 font-medium -mt-0.5">
                 Ringkasan tampil di kartu buku publik dan dapat dicari.
@@ -238,11 +224,13 @@ export default function AddBookModal() {
               <input type="url" value={pdfUrl}
                 onChange={e => setPdfUrl(e.target.value)}
                 className={inputCls}
-                placeholder="https://…" />
+                placeholder="https://..." />
             </Field>
 
             {/* ── Actions ─────────────────────────────────────────── */}
-            <div className="pt-2 border-t border-slate-100 flex flex-col-reverse sm:flex-row
+            </div>
+
+            <div className="shrink-0 border-t border-slate-100 bg-white px-5 py-4 sm:px-6 flex flex-col-reverse sm:flex-row
                             items-stretch sm:items-center justify-end gap-3">
               <button
                 type="button"
@@ -260,7 +248,7 @@ export default function AddBookModal() {
                            font-bold text-sm shadow-lg shadow-blue-900/20 transition-all
                            disabled:opacity-60 flex items-center justify-center gap-2"
               >
-                {loading ? <><Spinner /> Menyimpan…</> : '📖 Simpan Buku'}
+                {loading ? <><Spinner /> Menyimpan...</> : 'Simpan Buku'}
               </button>
             </div>
           </form>

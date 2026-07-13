@@ -1,16 +1,14 @@
 ﻿"use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import BorrowModal from "../katalog/BorrowModal";
+import type { CatalogBook } from "../components/CatalogBookCard";
 
-export default function QRCodeModal({ book, isLoggedIn = false, userEmail = '' }: { book: any, isLoggedIn?: boolean, userEmail?: string }) {
+export default function QRCodeModal({ book, isLoggedIn = false, userEmail = '', compact = false }: { book: CatalogBook, isLoggedIn?: boolean, userEmail?: string, compact?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
 
   const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://e-perpus.kejaksaan.go.id';
   const qrData = `${appUrl}/buku/${book?.id}`;
@@ -38,7 +36,7 @@ export default function QRCodeModal({ book, isLoggedIn = false, userEmail = '' }
       URL.revokeObjectURL(url);
       setDownloaded(true);
       setTimeout(() => setDownloaded(false), 3000);
-    } catch (err) {
+    } catch {
       alert('Gagal mengunduh QR Code. Pastikan koneksi internet tersedia.');
     } finally {
       setDownloading(false);
@@ -177,7 +175,7 @@ export default function QRCodeModal({ book, isLoggedIn = false, userEmail = '' }
       document.body.removeChild(a);
       setDownloaded(true);
       setTimeout(() => setDownloaded(false), 3000);
-    } catch (err) {
+    } catch {
       // Fallback: download QR biasa
       handleDownloadQR();
     } finally {
@@ -328,12 +326,15 @@ export default function QRCodeModal({ book, isLoggedIn = false, userEmail = '' }
       <button
         type="button"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOpen(true); }}
-        className="flex items-center justify-center w-full sm:w-auto px-5 py-2.5 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 border border-slate-200 shadow-sm transition-all active:scale-95 gap-2"
+        className={compact
+          ? "flex h-10 w-full items-center justify-center whitespace-nowrap rounded-md border border-slate-200 bg-white px-3 text-center text-[10px] font-black uppercase leading-none text-slate-700 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
+          : "flex items-center justify-center w-full sm:w-auto px-5 py-2.5 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 border border-slate-200 shadow-sm transition-all active:scale-95 gap-2"
+        }
       >
-        <span className="text-sm">🔍</span> Detail & QR
+        {compact ? 'Detail & QR' : <><span className="text-sm">🔍</span> Detail & QR</>}
       </button>
 
-      {mounted && isOpen && createPortal(modalContent, document.body)}
+      {isOpen && typeof document !== 'undefined' && createPortal(modalContent, document.body)}
     </>
   );
 }

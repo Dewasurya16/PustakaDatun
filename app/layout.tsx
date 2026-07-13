@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "E-Perpus",
+    title: "Pustaka Datun",
   },
 };
 

@@ -14,13 +14,13 @@ export const revalidate = 0;
 // ── Warna cover per kategori ───────────────────────────────────
 const getCoverStyle = (category: string) => {
   const cat = (category || '').toLowerCase();
-  if (cat.includes('pidana'))   return { bg: 'from-rose-900 via-rose-800 to-red-950', icon: '⚖️', accent: '#fca5a5' };
-  if (cat.includes('perdata'))  return { bg: 'from-blue-900 via-blue-800 to-indigo-950', icon: '📜', accent: '#93c5fd' };
-  if (cat.includes('tata'))     return { bg: 'from-violet-900 via-violet-800 to-purple-950', icon: '🏛️', accent: '#c4b5fd' };
-  if (cat.includes('keuangan')) return { bg: 'from-yellow-800 via-yellow-700 to-yellow-950', icon: '💰', accent: '#fcd34d' };
-  if (cat.includes('korupsi'))  return { bg: 'from-orange-800 via-orange-700 to-red-950', icon: '🔍', accent: '#fdba74' };
-  if (cat.includes('ham'))      return { bg: 'from-teal-800 via-teal-700 to-cyan-950', icon: '🤝', accent: '#5eead4' };
-  if (cat.includes('pajak'))    return { bg: 'from-green-800 via-green-700 to-blue-950', icon: '📊', accent: '#86efac' };
+  if (cat.includes('peraturan') || cat.includes('legislasi')) return { bg: 'from-blue-900 via-blue-800 to-indigo-950', icon: '⚖️', accent: '#93c5fd' };
+  if (cat.includes('litigasi') || cat.includes('perkara')) return { bg: 'from-rose-900 via-rose-800 to-red-950', icon: '⚔️', accent: '#fca5a5' };
+  if (cat.includes('korporasi')) return { bg: 'from-yellow-800 via-yellow-700 to-yellow-950', icon: '🏢', accent: '#fcd34d' };
+  if (cat.includes('pengadaan')) return { bg: 'from-green-800 via-green-700 to-emerald-950', icon: '🛒', accent: '#86efac' };
+  if (cat.includes('perjanjian') || cat.includes('kerja sama')) return { bg: 'from-teal-800 via-teal-700 to-cyan-950', icon: '🤝', accent: '#5eead4' };
+  if (cat.includes('pelatihan') || cat.includes('paparan') || cat.includes('rakernas')) return { bg: 'from-violet-900 via-violet-800 to-purple-950', icon: '🎓', accent: '#c4b5fd' };
+  if (cat.includes('thl')) return { bg: 'from-orange-800 via-orange-700 to-red-950', icon: '📈', accent: '#fdba74' };
   return { bg: 'from-[#16213E] via-[#2D6A4F] to-[#0a1f18]', icon: '📚', accent: '#6ee7b7' };
 };
 

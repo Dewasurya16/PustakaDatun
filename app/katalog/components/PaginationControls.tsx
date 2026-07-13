@@ -4,17 +4,82 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
-export default function PaginationControls({ 
-  currentPage, 
-  totalPages 
-}: { 
-  currentPage: number; 
-  totalPages: number; 
-}) {
+type PaginationControlsProps = {
+  currentPage: number;
+  totalPages: number;
+};
+
+/**
+ * Build a compact page-number list: always shows first, last, and a
+ * window of ±1 around the current page, with `null` for ellipsis gaps.
+ */
+function buildPageNumbers(
+  current: number,
+  total: number,
+): (number | null)[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  const pages: (number | null)[] = [1];
+  const windowStart = Math.max(2, current - 1);
+  const windowEnd = Math.min(total - 1, current + 1);
+
+  if (windowStart > 2) pages.push(null);
+  for (let i = windowStart; i <= windowEnd; i++) pages.push(i);
+  if (windowEnd < total - 1) pages.push(null);
+
+  pages.push(total);
+  return pages;
+}
+
+/* ── Chevron icons ────────────────────────────────────── */
+
+function ChevronLeft() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+function ChevronRight() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
+/* ── Component ────────────────────────────────────────── */
+
+export default function PaginationControls({
+  currentPage,
+  totalPages,
+}: PaginationControlsProps) {
   const searchParams = useSearchParams();
   const [isNavigating, setIsNavigating] = useState(false);
 
-  // Otomatis matikan loading ketika URL berhasil berubah (data sudah di-load)
   useEffect(() => {
     setIsNavigating(false);
   }, [searchParams]);
@@ -27,53 +92,97 @@ export default function PaginationControls({
 
   if (totalPages <= 1) return null;
 
+  const pages = buildPageNumbers(currentPage, totalPages);
+
+  const baseBtnClass =
+    'inline-flex items-center justify-center rounded-lg text-[13px] font-semibold transition-all duration-200';
+
   return (
-    <div className="mt-12 flex flex-col items-center justify-center gap-4">
-      
-      {/* ── ANIMASI LOADING (Akan muncul saat tombol diklik) ── */}
+    <div className="flex flex-col items-center gap-4">
+      {/* Loading indicator */}
       {isNavigating && (
-        <div className="flex items-center gap-2 text-blue-600 text-[11px] font-bold uppercase tracking-widest animate-pulse">
-          <span className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          Mengambil Data Buku...
+        <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500 animate-pulse">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-400 border-t-transparent" />
+          Memuat...
         </div>
       )}
 
-      <div className="flex items-center justify-center gap-4 w-full">
-        {/* Tombol Sebelumnya */}
+      <nav
+        className="flex items-center gap-1.5"
+        aria-label="Pagination"
+      >
+        {/* Prev button */}
         {currentPage > 1 ? (
           <Link
             href={getPageUrl(currentPage - 1)}
             onClick={() => setIsNavigating(true)}
-            className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-blue-50 hover:text-[#16213E] transition-all shadow-sm"
+            className={`${baseBtnClass} h-9 w-9 border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50`}
+            aria-label="Halaman sebelumnya"
           >
-            &larr; Sebelumnya
+            <ChevronLeft />
           </Link>
         ) : (
-          <button disabled className="px-5 py-2.5 bg-slate-50 border border-slate-200 text-slate-400 rounded-xl text-xs font-bold opacity-60 cursor-not-allowed">
-            &larr; Sebelumnya
+          <button
+            disabled
+            className={`${baseBtnClass} h-9 w-9 border border-neutral-100 bg-neutral-50 text-neutral-300 cursor-not-allowed`}
+            aria-label="Halaman sebelumnya"
+          >
+            <ChevronLeft />
           </button>
         )}
 
-        {/* Info Halaman */}
-        <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest bg-slate-100/50 px-4 py-2 rounded-lg">
-          Hal <span className="text-[#16213E]">{currentPage}</span> / {totalPages}
-        </div>
+        {/* Page numbers */}
+        {pages.map((page, idx) =>
+          page === null ? (
+            <span
+              key={`ellipsis-${idx}`}
+              className="flex h-9 w-6 items-center justify-center text-[13px] text-neutral-400"
+              aria-hidden="true"
+            >
+              …
+            </span>
+          ) : (
+            <Link
+              key={page}
+              href={getPageUrl(page)}
+              onClick={() => setIsNavigating(true)}
+              aria-current={page === currentPage ? 'page' : undefined}
+              className={`${baseBtnClass} h-9 min-w-[2.25rem] px-2 ${
+                page === currentPage
+                  ? 'bg-neutral-900 text-white shadow-sm'
+                  : 'border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50'
+              }`}
+            >
+              {page}
+            </Link>
+          ),
+        )}
 
-        {/* Tombol Selanjutnya */}
+        {/* Next button */}
         {currentPage < totalPages ? (
           <Link
             href={getPageUrl(currentPage + 1)}
             onClick={() => setIsNavigating(true)}
-            className="px-5 py-2.5 bg-[#16213E] border border-[#16213E] text-white rounded-xl text-xs font-bold hover:bg-[#123023] transition-all shadow-sm shadow-blue-900/20"
+            className={`${baseBtnClass} h-9 w-9 border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50`}
+            aria-label="Halaman selanjutnya"
           >
-            Selanjutnya &rarr;
+            <ChevronRight />
           </Link>
         ) : (
-          <button disabled className="px-5 py-2.5 bg-slate-50 border border-slate-200 text-slate-400 rounded-xl text-xs font-bold opacity-60 cursor-not-allowed">
-            Selanjutnya &rarr;
+          <button
+            disabled
+            className={`${baseBtnClass} h-9 w-9 border border-neutral-100 bg-neutral-50 text-neutral-300 cursor-not-allowed`}
+            aria-label="Halaman selanjutnya"
+          >
+            <ChevronRight />
           </button>
         )}
-      </div>
+      </nav>
+
+      {/* Page info */}
+      <p className="text-[12px] font-medium text-neutral-400">
+        Halaman {currentPage} dari {totalPages}
+      </p>
     </div>
   );
 }

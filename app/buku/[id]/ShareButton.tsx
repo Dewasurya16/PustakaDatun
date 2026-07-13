@@ -9,7 +9,7 @@ export default function ShareButton({ title }: { title: string }) {
       try {
         await navigator.share({
           title: `Buku: ${title}`,
-          text: `Cek buku "${title}" di E-Perpus Pustaka Datun Kejaksaan Agung!`,
+          text: `Cek buku "${title}" di Pustaka Datun Kejaksaan Agung!`,
           url: window.location.href,
         });
       } catch (err) {

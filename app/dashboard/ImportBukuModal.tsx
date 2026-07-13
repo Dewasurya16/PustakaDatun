@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import GlobalActionLoading from '../components/GlobalActionLoading';
 import { createPortal } from 'react-dom';
+import { isMasterCategoryName, MASTER_CATEGORY_NAMES } from '../../lib/categories';
 
 export default function ImportBukuModal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,7 +21,7 @@ export default function ImportBukuModal() {
         title: 'Buku Contoh (Wajib)',
         author: 'Penulis Contoh',
         publisher: 'Penerbit Contoh',
-        category: 'Hukum',
+        category: 'Buku Datun',
         nomor_buku: 'ISBN-12345',
         stock: 5,
         rak: 'A1',
@@ -85,6 +86,18 @@ export default function ImportBukuModal() {
         if (insertData.length === 0) throw new Error('Tidak ada data valid (Pastikan kolom "title" terisi).');
 
         // ── Cek duplikat berdasarkan judul ──
+        const invalidCategories = Array.from(new Set(
+          insertData
+            .map(row => row.category)
+            .filter((category): category is string => !!category && !isMasterCategoryName(category))
+        ));
+
+        if (invalidCategories.length > 0) {
+          throw new Error(
+            `Kategori tidak valid: ${invalidCategories.join(', ')}. Gunakan salah satu dari: ${MASTER_CATEGORY_NAMES.join(', ')}.`
+          );
+        }
+
         const titles = insertData.map(r => r.title);
         const { data: existing } = await supabase
           .from('books')

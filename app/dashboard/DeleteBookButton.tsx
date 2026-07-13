@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import GlobalActionLoading from "../components/GlobalActionLoading";
 
-export default function DeleteBookButton({ bookId, bookTitle }: { bookId: string; bookTitle: string }) {
+export default function DeleteBookButton({ bookId, bookTitle, compact = false }: { bookId: string; bookTitle: string; compact?: boolean }) {
   const router = useRouter();
   const [isDeleting,  setIsDeleting]  = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -30,10 +30,13 @@ export default function DeleteBookButton({ bookId, bookTitle }: { bookId: string
       <button
         onClick={() => setShowConfirm(true)}
         disabled={isDeleting}
-        className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded hover:bg-red-100 hover:text-red-700 transition-colors disabled:opacity-50"
+        className={compact
+          ? 'inline-flex h-10 w-full items-center justify-center whitespace-nowrap rounded-md border border-red-200 bg-red-50 px-3 text-[10px] font-black leading-none text-red-600 transition-colors hover:bg-red-100 hover:text-red-700 disabled:opacity-50'
+          : 'text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded hover:bg-red-100 hover:text-red-700 transition-colors disabled:opacity-50'
+        }
         title="Hapus Buku"
       >
-        {isDeleting ? "Menghapus..." : "Hapus"}
+        {isDeleting ? (compact ? "..." : "Menghapus...") : "Hapus"}
       </button>
 
       {/* Custom confirm modal */}
@@ -48,7 +51,7 @@ export default function DeleteBookButton({ bookId, bookTitle }: { bookId: string
             <h4 className="text-lg font-black text-slate-800 mb-2">Hapus Buku?</h4>
             <p className="text-xs text-slate-500 font-medium mb-8 px-2 leading-relaxed">
               Tindakan ini <span className="font-bold text-red-600">tidak dapat dibatalkan</span>. Buku{' '}
-              <span className="font-bold text-slate-800">"{bookTitle}"</span> akan dihapus permanen dari sistem.
+              <span className="font-bold text-slate-800">{bookTitle}</span> akan dihapus permanen dari sistem.
             </p>
             <div className="flex gap-3">
               <button

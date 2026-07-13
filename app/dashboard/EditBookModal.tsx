@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import GlobalActionLoading from '../components/GlobalActionLoading';
+import { MASTER_CATEGORY_NAMES } from '../../lib/categories';
+import type { CatalogBook } from '../components/CatalogBookCard';
 
 /* ── Spinner kecil ─────────────────────────────────────────────────────── */
 function Spinner() {
@@ -38,9 +40,8 @@ const inputCls =
   'outline-none transition-all text-sm font-medium text-slate-800 placeholder:text-slate-300';
 
 /* ════════════════════════════════════════════════════════════════════════ */
-export default function EditBookModal({ book }: { book: any }) {
+export default function EditBookModal({ book, compact = false }: { book: CatalogBook; compact?: boolean }) {
   const [isOpen,    setIsOpen]    = useState(false);
-  const [mounted,   setMounted]   = useState(false);
   const [title,     setTitle]     = useState(book.title     || '');
   const [author,    setAuthor]    = useState(book.author    || '');
   const [publisher, setPublisher] = useState(book.publisher || '');
@@ -52,9 +53,6 @@ export default function EditBookModal({ book }: { book: any }) {
   const [ringkasan, setRingkasan] = useState(book.ringkasan || '');
   const [loading,   setLoading]   = useState(false);
   const router = useRouter();
-
-  /* createPortal needs the DOM to be ready */
-  useEffect(() => { setMounted(true); }, []);
 
   /* Kunci scroll body saat modal terbuka */
   useEffect(() => {
@@ -85,16 +83,17 @@ export default function EditBookModal({ book }: { book: any }) {
   const trigger = (
     <button
       onClick={() => setIsOpen(true)}
-      className="inline-flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-600
-                 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest
-                 border border-blue-100 transition-colors"
+      className={compact
+        ? 'inline-flex h-10 w-full items-center justify-center whitespace-nowrap rounded-md border border-blue-100 bg-blue-50 px-3 text-[10px] font-black uppercase leading-none text-blue-700 transition-colors hover:bg-blue-100'
+        : 'inline-flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-600 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-blue-100 transition-colors'
+      }
     >
-      ✏️ Edit
+      {compact ? 'Edit' : '✏️ Edit'}
     </button>
   );
 
   /* ── Modal (via Portal) ──────────────────────────────────────────── */
-  const modal = isOpen && mounted && createPortal(
+  const modal = isOpen && typeof document !== 'undefined' && createPortal(
     <>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -160,20 +159,11 @@ export default function EditBookModal({ book }: { book: any }) {
                   className={inputCls}
                 >
                   <option value="" disabled>Pilih Kategori...</option>
-                  <option value="Buku Datun">Buku Datun</option>
-                  <option value="Materi Paparan Jamdatun">Materi Paparan Jamdatun</option>
-                  <option value="Peraturan">Peraturan</option>
-                  <option value="Pengetahuan penunjang">Pengetahuan penunjang</option>
-                  <option value="Berkas perkara lengkap">Berkas perkara lengkap</option>
-                  <option value="LO kebijakan dan legislasi">LO kebijakan dan legislasi</option>
-                  <option value="LO korporasi">LO korporasi</option>
-                  <option value="LO litigasi">LO litigasi</option>
-                  <option value="LO pengadaan - pbj">LO pengadaan - pbj</option>
-                  <option value="LO perjanjian">LO perjanjian</option>
-                  <option value="Materi pelatihan">Materi pelatihan</option>
-                  <option value="Perjanjian kerja sama">Perjanjian kerja sama</option>
-                  <option value="Laporan perkembangan THL">Laporan perkembangan THL</option>
-                  <option value="Materi Rakernas">Materi Rakernas</option>
+                  {MASTER_CATEGORY_NAMES.map((categoryName) => (
+                    <option key={categoryName} value={categoryName}>
+                      {categoryName}
+                    </option>
+                  ))}
                 </select>
               </Field>
             </div>

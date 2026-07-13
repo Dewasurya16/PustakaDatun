@@ -3,26 +3,32 @@ import { cookies } from 'next/headers';
 import Link from 'next/link';
 import Image from 'next/image';
 import AIAssistant from './AIAssistant';
+import { MASTER_CATEGORY_NAMES } from '../lib/categories';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const categories = [
-  { name: "Buku Datun", icon: "📚" },
-  { name: "Materi Paparan Jamdatun", icon: "📊" },
-  { name: "Peraturan", icon: "⚖️" },
-  { name: "Pengetahuan penunjang", icon: "💡" },
-  { name: "Berkas perkara lengkap", icon: "📁" },
-  { name: "LO kebijakan dan legislasi", icon: "🏛️" },
-  { name: "LO korporasi", icon: "🏢" },
-  { name: "LO litigasi", icon: "⚔️" },
-  { name: "LO pengadaan - pbj", icon: "🛒" },
-  { name: "LO perjanjian", icon: "🤝" },
-  { name: "Materi pelatihan", icon: "🎓" },
-  { name: "Perjanjian kerja sama", icon: "📄" },
-  { name: "Laporan perkembangan THL", icon: "📈" },
-  { name: "Materi Rakernas", icon: "👥" }
-];
+const CATEGORY_ICONS = {
+  'Buku Datun': '📚',
+  'Materi Paparan Jamdatun': '📊',
+  'Peraturan': '⚖️',
+  'Pengetahuan penunjang': '💡',
+  'Berkas perkara lengkap': '📁',
+  'LO kebijakan dan legislasi': '🏛️',
+  'LO korporasi': '🏢',
+  'LO litigasi': '⚔️',
+  'LO pengadaan - pbj': '🛒',
+  'LO perjanjian': '🤝',
+  'Materi pelatihan': '🎓',
+  'Perjanjian kerja sama': '📄',
+  'Laporan perkembangan THL': '📈',
+  'Materi Rakernas': '👥',
+} satisfies Record<(typeof MASTER_CATEGORY_NAMES)[number], string>;
+
+const categories = MASTER_CATEGORY_NAMES.map((name) => ({
+  name,
+  icon: CATEGORY_ICONS[name],
+}));
 
 const getCoverStyle = (category: string) => {
   const cat = (category || '').toLowerCase();

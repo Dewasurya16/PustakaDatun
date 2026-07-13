@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import EditBookModal from './EditBookModal';
 import DeleteBookButton from './DeleteBookButton';
 import QRCodeModal from './QRCodeModal';
+import { MASTER_CATEGORY_NAMES } from '../../lib/categories';
 
 type Book = {
   id: string;
@@ -148,11 +149,6 @@ export default function AdminBooksTable({ books, userEmail = '' }: { books: Book
   const [isTransition, setIsTransition] = useState(false);
   const firstRender = useRef(true);
 
-  const categories = useMemo(
-    () => Array.from(new Set(books.map(b => b.category).filter(Boolean))) as string[],
-    [books]
-  );
-
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     return books
@@ -263,7 +259,7 @@ export default function AdminBooksTable({ books, userEmail = '' }: { books: Book
             >
               Semua
             </button>
-            {categories.map(cat => (
+            {MASTER_CATEGORY_NAMES.map(cat => (
               <button
                 key={cat}
                 onClick={() => { setCatFilter(cat); setPage(1); }}

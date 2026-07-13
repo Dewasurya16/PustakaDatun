@@ -70,7 +70,7 @@ export default function RegisterPage() {
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
           </div>
           <div className="leading-tight">
-            <p className="text-white font-black text-[15px]">E-Perpustakaan</p>
+            <p className="text-white font-black text-[15px]">Pustaka Datun</p>
             <p className="text-yellow-400 text-[10px] font-bold uppercase tracking-widest mt-0.5">Pustaka Datun Kejaksaan Agung</p>
           </div>
         </div>
@@ -118,7 +118,7 @@ export default function RegisterPage() {
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
             </div>
             <div className="leading-tight">
-              <p className="text-slate-900 font-black text-[15px]">E-Perpustakaan</p>
+              <p className="text-slate-900 font-black text-[15px]">Pustaka Datun</p>
               <p className="text-blue-600 text-[10px] font-bold uppercase tracking-widest mt-0.5">Pustaka Datun Kejaksaan Agung</p>
             </div>
           </div>
