@@ -30,7 +30,7 @@ export default function ShareButton({ title }: { title: string }) {
   return (
     <button
       onClick={handleShare}
-      className="p-3.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-all flex items-center justify-center group"
+      className="group flex items-center justify-center rounded-xl border border-[#eadfdb] bg-white p-3 text-slate-500 transition-all hover:border-orange-200 hover:bg-[#fff8f5] hover:text-[#f97316]"
       title="Bagikan buku ini"
     >
       {copied ? (

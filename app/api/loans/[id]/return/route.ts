@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import {
+  createAuthenticatedClient,
+  getAuthenticatedProfile,
+} from '@/lib/auth';
 
 // Define the context to match Next.js 15+ expectations
 type Context = {
@@ -11,6 +14,15 @@ export async function PATCH(
   context: Context // params is inside context
 ) {
   try {
+    const profile = await getAuthenticatedProfile();
+    if (!profile || profile.role !== 'admin') {
+      return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 });
+    }
+    const supabase = await createAuthenticatedClient();
+    if (!supabase) {
+      return NextResponse.json({ error: 'Sesi tidak valid.' }, { status: 401 });
+    }
+
     // Await the params before using them
     const { id } = await context.params;
     
@@ -62,7 +74,8 @@ export async function PATCH(
     }
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Terjadi kesalahan.';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -25,7 +25,7 @@ export default function SortDropdown() {
         value={currentSort}
         onChange={(event) => handleSort(event.target.value)}
         aria-label="Urutkan katalog"
-        className="h-11 w-full cursor-pointer appearance-none rounded-lg border border-neutral-200 bg-neutral-50/60 px-4 pr-10 text-[13px] font-medium text-neutral-800 outline-none transition-all focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-900/5"
+        className="h-11 w-full cursor-pointer appearance-none rounded-xl border border-[#d7e5f2] bg-white px-4 pr-10 text-[12px] font-semibold text-[#17233c] outline-none transition-all hover:border-blue-300 focus:border-blue-400 focus:ring-4 focus:ring-blue-100/70"
       >
         <option value="terbaru">Terbaru</option>
         <option value="abjad">Abjad A–Z</option>

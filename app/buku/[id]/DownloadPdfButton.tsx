@@ -1,28 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { logPdfDownload } from '../../actions';
 
 interface Props {
   bookId: string;
-  bookTitle: string;
-  pdfUrl: string;
 }
 
-export default function DownloadPdfButton({ bookId, bookTitle, pdfUrl }: Props) {
+export default function DownloadPdfButton({ bookId }: Props) {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
   const handleClick = async () => {
     setLoading(true);
     try {
-      await logPdfDownload(bookId, bookTitle, pdfUrl);
       setDone(true);
-      // Buka PDF di tab baru setelah log berhasil
-      window.open(pdfUrl, '_blank', 'noopener,noreferrer');
-    } catch (e) {
-      // Tetap buka PDF walau log gagal
-      window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+      window.open(`/api/books/${bookId}/ebook`, '_blank', 'noopener,noreferrer');
+    } catch {
+      alert('E-book belum dapat dibuka.');
     } finally {
       setLoading(false);
       setTimeout(() => setDone(false), 3000);
@@ -33,10 +27,10 @@ export default function DownloadPdfButton({ bookId, bookTitle, pdfUrl }: Props) 
     <button
       onClick={handleClick}
       disabled={loading}
-      className={`flex-1 text-center py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all duration-200 ${
+      className={`flex-1 text-center py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all duration-200 ${
         done
           ? 'bg-emerald-500 text-white border border-emerald-400'
-          : 'bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-600 hover:text-white'
+          : 'border border-orange-200 bg-[#fff3ec] text-[#e86712] hover:bg-[#f97316] hover:text-white'
       } ${loading ? 'opacity-70 cursor-wait' : ''}`}
     >
       {loading ? (

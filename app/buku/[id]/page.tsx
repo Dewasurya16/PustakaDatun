@@ -1,11 +1,16 @@
-import { supabase } from '../../../lib/supabase';
-import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import BorrowModal from '../../katalog/BorrowModal';
 import ShareButton from './ShareButton';
 import DownloadPdfButton from './DownloadPdfButton';
+import {
+  createAuthenticatedClient,
+  getAuthenticatedProfile,
+} from '../../../lib/auth';
+import { redirect } from 'next/navigation';
+import PublicNavbar from '../../components/PublicNavbar';
+import PublicFooter from '../../components/PublicFooter';
+import AIAssistant from '../../AIAssistant';
 
 
 export const dynamic = 'force-dynamic';
@@ -27,13 +32,16 @@ const getCoverStyle = (category: string) => {
 export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const cookieStore = await cookies();
-  const session   = cookieStore.get('session')?.value;
-  const userEmail = cookieStore.get('user_email')?.value || '';
-  const isLoggedIn = !!session;
+  const profile = await getAuthenticatedProfile();
+  if (!profile) redirect(`/login?redirect=/buku/${encodeURIComponent(id)}`);
+  const authenticatedSupabase = await createAuthenticatedClient();
+  if (!authenticatedSupabase) {
+    redirect(`/login?redirect=/buku/${encodeURIComponent(id)}`);
+  }
+  const userEmail = profile.email;
 
   // Fetch buku
-  const { data: book, error } = await supabase
+  const { data: book, error } = await authenticatedSupabase
     .from('books')
     .select('*')
     .eq('id', id)
@@ -42,7 +50,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
   if (error || !book) notFound();
 
   // Fetch buku terkait (kategori sama, bukan buku ini)
-  const { data: related } = await supabase
+  const { data: related } = await authenticatedSupabase
     .from('books')
     .select('id, title, author, category, stock, rating')
     .eq('category', book.category)
@@ -54,47 +62,31 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
   const isHabis = book.stock === 0;
 
   return (
-    <div className="min-h-screen bg-[#F3F6F4] font-sans">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f9fc_0%,#edf3f8_48%,#e7eef5_100%)] font-sans text-slate-900">
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm">
-        <div className="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 relative flex-shrink-0">
-              <Image src="/logo-kejaksaan.png" alt="Logo" fill className="object-contain rounded-full" />
-            </div>
-            <div className="flex items-center gap-2 text-[11px]">
-              <Link href="/" className="font-bold text-slate-400 hover:text-blue-600 transition-colors">Beranda</Link>
-              <span className="text-slate-300">/</span>
-              <Link href="/katalog" className="font-bold text-slate-400 hover:text-blue-600 transition-colors">Katalog</Link>
-              <span className="text-slate-300">/</span>
-              <span className="font-black text-slate-700 line-clamp-1">{book.title}</span>
-            </div>
-          </div>
-          {isLoggedIn ? (
-            <Link href="/katalog" className="px-4 py-2 bg-[#16213E] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#143628] transition-all">
-              ← Katalog
-            </Link>
-          ) : (
-            <Link href="/login" className="px-4 py-2 bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all">
-              🔐 Login
-            </Link>
-          )}
-        </div>
-      </header>
+      <PublicNavbar active="catalog" />
 
-      <main className="max-w-5xl mx-auto px-5 py-8 space-y-8">
+      <main className="mx-auto max-w-[1120px] space-y-6 px-3 py-5 sm:px-6 sm:py-7 lg:py-9">
+        <nav className="flex min-w-0 items-center gap-2 px-1 text-[10px] font-bold text-[#846f6a]" aria-label="Breadcrumb">
+          <Link href="/katalog" className="transition hover:text-[#f97316]">Katalog</Link>
+          <span aria-hidden="true">/</span>
+          <span className="truncate text-[#17233c]">{book.title}</span>
+        </nav>
 
         {/* Hero Card */}
-        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 flex flex-col md:flex-row">
+        <div className="grid gap-6 rounded-[26px] border border-white/80 bg-white p-4 shadow-[0_20px_55px_rgba(89,55,51,0.13)] sm:p-6 md:grid-cols-[240px_1fr] lg:gap-8 lg:p-7">
 
           {/* Cover */}
-          <div className={`relative bg-gradient-to-br ${cover.bg} flex-shrink-0 w-full md:w-64 lg:w-72 h-56 md:h-auto flex items-center justify-center overflow-hidden`}>
-            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)', backgroundSize: '32px 32px' }} />
-            <div className="relative text-center px-6">
-              <div className="text-7xl mb-4 drop-shadow-xl">{cover.icon}</div>
-              <p className="text-white/90 text-xs font-black leading-tight line-clamp-4 drop-shadow-md">
+          <div className={`relative mx-auto flex h-[350px] w-full max-w-[240px] items-center justify-center overflow-hidden rounded-[6px_18px_18px_6px] bg-gradient-to-br p-6 shadow-[0_18px_36px_rgba(15,23,42,0.22)] md:mx-0 md:h-[380px] ${cover.bg}`}>
+            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)', backgroundSize: '30px 30px' }} />
+            <div className="absolute inset-y-0 left-0 w-[9%] border-r border-white/10 bg-black/15" />
+            <div className="relative max-w-[190px] text-center">
+              <div className="mb-5 text-6xl drop-shadow-xl">{cover.icon}</div>
+              <p className="line-clamp-5 text-sm font-black leading-snug text-white/95 drop-shadow-md">
                 {book.title}
+              </p>
+              <p className="mt-3 text-[8px] font-bold uppercase tracking-[0.18em] text-white/55">
+                {book.category || 'Pustaka Datun'}
               </p>
             </div>
             {isHabis && (
@@ -104,44 +96,44 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
                 </span>
               </div>
             )}
-            <div className="absolute bottom-3 right-3 bg-black/40 backdrop-blur-sm text-white text-[10px] font-black px-3 py-1 rounded-full">
+            <div className="absolute bottom-3 right-3 rounded-full border border-white/15 bg-black/35 px-2.5 py-1 text-[9px] font-black text-white backdrop-blur-sm">
               {book.stock} pcs
             </div>
           </div>
 
           {/* Info */}
-          <div className="flex-1 p-6 md:p-8 flex flex-col">
-            <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex min-w-0 flex-col md:py-1">
+            <div className="mb-4 flex flex-wrap gap-2">
               {book.category && (
-                <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded border border-blue-100 text-[9px] font-black uppercase tracking-widest">
+                <span className="rounded-full border border-orange-100 bg-[#fff3ec] px-3 py-1 text-[8px] font-black uppercase tracking-widest text-[#e86712]">
                   {book.category}
                 </span>
               )}
               {book.rak && (
-                <span className="px-2.5 py-1 bg-slate-50 text-slate-600 rounded border border-slate-100 text-[9px] font-bold">
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[8px] font-bold text-slate-600">
                   📍 Rak {book.rak}
                 </span>
               )}
               {book.nomor_buku && (
-                <span className="px-2.5 py-1 bg-slate-50 text-slate-500 rounded border border-slate-100 text-[9px] font-mono">
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[8px] font-mono text-slate-500">
                   ISBN: {book.nomor_buku}
                 </span>
               )}
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-black text-slate-800 leading-tight mb-2">
+            <h1 className="mb-2 max-w-3xl text-2xl font-black leading-[1.16] tracking-[-0.025em] text-[#17233c] sm:text-3xl">
               {book.title}
             </h1>
             {book.author && (
-              <p className="text-sm text-slate-500 font-medium mb-1">oleh <span className="font-bold text-slate-700">{book.author}</span></p>
+              <p className="mb-1 text-xs font-medium text-slate-500">oleh <span className="font-bold text-[#17233c]">{book.author}</span></p>
             )}
             {book.publisher && (
-              <p className="text-[11px] text-slate-400 font-medium mb-4">Penerbit: {book.publisher}</p>
+              <p className="mb-3 text-[10px] font-medium text-slate-400">Penerbit: {book.publisher}</p>
             )}
 
             {/* Rating */}
             {(book.rating_count || 0) > 0 && (
-              <div className="flex items-center gap-2 mb-5">
+              <div className="mb-3 flex items-center gap-2">
                 <div className="flex items-center gap-0.5">
                   {[1,2,3,4,5].map(s => (
                     <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill={s <= ratingStars ? '#F59E0B' : '#E2E8F0'}>
@@ -156,26 +148,24 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
 
             {/* Ringkasan */}
             {book.ringkasan && (
-              <div className="flex-1 mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Ringkasan</p>
-                <p className="text-[13px] text-slate-600 leading-relaxed font-medium">{book.ringkasan}</p>
+              <div className="mb-4 mt-1 rounded-[18px] border border-[#eee2de] bg-[#fffaf8] p-4">
+                <p className="mb-2 text-[9px] font-black uppercase tracking-[0.2em] text-[#e86712]">Ringkasan</p>
+                <p className="line-clamp-5 text-xs font-medium leading-6 text-slate-600">{book.ringkasan}</p>
               </div>
             )}
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 mt-auto">
+            <div className="mt-auto grid gap-2.5 sm:grid-cols-[1fr_1.05fr]">
               <div className="flex flex-1 gap-2">
                 {book.pdf_url && (
                   <DownloadPdfButton
                     bookId={book.id}
-                    bookTitle={book.title}
-                    pdfUrl={book.pdf_url}
                   />
                 )}
 
                 <ShareButton title={book.title} />
               </div>
-              {isLoggedIn && userEmail ? (
+              {userEmail ? (
                 <div className="flex-1">
                   <BorrowModal book={book} userEmail={userEmail} />
                 </div>
@@ -193,27 +183,34 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
 
         {/* Buku Terkait */}
         {related && related.length > 0 && (
-          <div>
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-1 h-5 bg-[#16213E] rounded-full" />
-              <h2 className="font-black text-slate-800 text-base">Buku Terkait — {book.category}</h2>
+          <section className="rounded-[24px] border border-white/80 bg-white/75 p-4 shadow-[0_14px_40px_rgba(89,55,51,0.08)] backdrop-blur sm:p-5">
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#f97316]">Rak digital</p>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-[#17233c]">Buku terkait</h2>
+                <p className="mt-1 text-xs text-slate-400">{book.category}</p>
+              </div>
+              <Link href={`/katalog?cat=${encodeURIComponent(book.category || '')}`} className="hidden rounded-full border border-[#eaded9] px-4 py-2 text-[11px] font-bold text-slate-500 hover:border-orange-200 hover:text-[#f97316] sm:inline-flex">
+                Lihat kategori →
+              </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-4">
               {related.map(b => {
                 const c = getCoverStyle(b.category || '');
                 return (
                   <Link
                     key={b.id}
                     href={`/buku/${b.id}`}
-                    className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col"
+                    className="group grid grid-cols-[88px_1fr] overflow-hidden rounded-[18px] border border-[#eee3df] bg-white shadow-[0_6px_18px_rgba(65,44,42,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:border-orange-100 hover:shadow-[0_12px_26px_rgba(65,44,42,0.1)] min-[480px]:flex min-[480px]:flex-col"
                   >
-                    <div className={`h-24 bg-gradient-to-br ${c.bg} flex items-center justify-center text-3xl`}>
+                    <div className={`relative flex min-h-[112px] items-center justify-center overflow-hidden bg-gradient-to-br text-3xl min-[480px]:h-24 min-[480px]:min-h-0 ${c.bg}`}>
+                      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)', backgroundSize: '26px 26px' }} />
                       {c.icon}
                     </div>
-                    <div className="p-3">
-                      <p className="text-[11px] font-black text-slate-800 line-clamp-2 leading-snug mb-1">{b.title}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{b.author || '—'}</p>
-                      <span className={`inline-block mt-2 text-[9px] font-black px-2 py-0.5 rounded-full ${b.stock > 0 ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-500'}`}>
+                    <div className="flex min-w-0 flex-1 flex-col p-3">
+                      <p className="mb-1 line-clamp-2 min-h-9 text-[11px] font-black leading-[18px] text-[#17233c] transition group-hover:text-[#f97316]">{b.title}</p>
+                      <p className="truncate text-[10px] font-medium text-slate-400">{b.author || '—'}</p>
+                      <span className={`mt-auto inline-flex w-fit rounded-full px-2 py-0.5 text-[8px] font-black ${b.stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-500'}`}>
                         {b.stock > 0 ? `${b.stock} Tersedia` : 'Habis'}
                       </span>
                     </div>
@@ -221,16 +218,18 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
                 );
               })}
             </div>
-          </div>
+          </section>
         )}
 
         {/* Back link */}
-        <div className="text-center pb-8">
-          <Link href="/katalog" className="inline-flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest hover:text-[#16213E] transition-colors">
+        <div className="pb-4 text-center">
+          <Link href="/katalog" className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-[#846f6a] transition hover:bg-white hover:text-[#f97316]">
             ← Kembali ke Katalog
           </Link>
         </div>
       </main>
+      <PublicFooter />
+      <AIAssistant />
     </div>
   );
 }

@@ -3,10 +3,15 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Rute publik (tanpa login)
-const PUBLIC_PATHS = ['/', '/login', '/register', '/buku-tamu', '/buku', '/katalog'];
-
-// Rute khusus admin
-const ADMIN_PATHS = ['/dashboard'];
+const PUBLIC_PATHS = [
+  '/',
+  '/login',
+  '/register',
+  '/buku-tamu',
+  '/faq',
+  '/layanan',
+  '/tentang',
+];
 
 // /profil tidak perlu ditambahkan — otomatis terlindungi karena tidak ada di PUBLIC_PATHS
 
@@ -17,19 +22,13 @@ export function middleware(request: NextRequest) {
   const isPublic = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'));
   if (isPublic) return NextResponse.next();
 
-  const session = request.cookies.get('session')?.value;
+  const hasAccessToken = !!request.cookies.get('sb_access_token')?.value;
 
   // Tidak ada session → redirect ke login
-  if (!session) {
+  if (!hasAccessToken) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
-  }
-
-  // Cek proteksi admin: hanya role 'admin' yang boleh akses /dashboard
-  const isAdminPath = ADMIN_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'));
-  if (isAdminPath && session !== 'admin') {
-    return NextResponse.redirect(new URL('/katalog', request.url));
   }
 
   return NextResponse.next();

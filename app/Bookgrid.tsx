@@ -211,14 +211,12 @@ function BookCard({
           {isLoggedIn && userEmail ? (
             <BorrowModal book={book} userEmail={userEmail} />
           ) : book.pdf_url ? (
-            <a
-              href={book.pdf_url}
-              target="_blank"
-              rel="noreferrer"
+            <Link
+              href={`/login?redirect=/buku/${book.id}`}
               className="flex w-full items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 py-2.5 text-[10px] font-bold uppercase tracking-wider text-blue-600 transition-all hover:-translate-y-0.5 hover:bg-blue-600 hover:text-white hover:shadow-md"
             >
-              📖 Baca E-Book
-            </a>
+              🔐 Login untuk Baca
+            </Link>
           ) : null}
         </div>
       </div>

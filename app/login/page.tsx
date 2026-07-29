@@ -27,7 +27,12 @@ export default function LoginPage() {
       try {
         const result = await handleLogin(email, password);
         if (result.success && result.url) {
-          window.location.href = result.url;
+          const requestedPath = new URLSearchParams(window.location.search).get('redirect');
+          const safeRedirect =
+            requestedPath?.startsWith('/') && !requestedPath.startsWith('//')
+              ? requestedPath
+              : result.url;
+          window.location.href = safeRedirect;
         } else {
           setErrorMsg(result.message || "Email atau password salah.");
           setIsLoading(false);

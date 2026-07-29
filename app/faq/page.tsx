@@ -1,144 +1,98 @@
-import { cookies } from 'next/headers';
 import Link from 'next/link';
-import Image from 'next/image';
-import ProfileMenu from '../ProfileMenu';
 import AIAssistant from '../AIAssistant';
+import PublicFooter from '../components/PublicFooter';
+import PublicNavbar from '../components/PublicNavbar';
 
 export const dynamic = 'force-dynamic';
 
-export default async function FAQPage() {
-  const cookieStore = await cookies();
-  const session   = cookieStore.get('session')?.value;
-  const userEmail = cookieStore.get('user_email')?.value || '';
-  const userRole  = session === 'admin' ? 'admin' : 'user';
-  const isLoggedIn = !!session;
+const FAQS = [
+  {
+    question: 'Apa itu Pustaka Datun Kejaksaan Agung?',
+    answer:
+      'Pustaka Datun adalah platform perpustakaan digital resmi yang menyediakan referensi, literatur, dan arsip bidang Perdata dan Tata Usaha Negara.',
+  },
+  {
+    question: 'Siapa yang dapat mengakses layanan Pustaka Datun?',
+    answer:
+      'Katalog dan dokumen internal ditujukan bagi pegawai dengan akun yang telah disetujui. Informasi layanan umum dan Buku Tamu tetap dapat diakses publik.',
+  },
+  {
+    question: 'Bagaimana cara meminjam buku?',
+    answer:
+      'Masuk menggunakan akun pegawai, cari buku melalui Katalog, pilih Detail & Pinjam, kemudian lengkapi data peminjaman.',
+  },
+  {
+    question: 'Apakah layanan Pustaka Datun dipungut biaya?',
+    answer:
+      'Tidak. Seluruh layanan perpustakaan diberikan sebagai fasilitas untuk mendukung peningkatan pengetahuan dan pelaksanaan tugas.',
+  },
+  {
+    question: 'Berapa lama batas waktu peminjaman buku?',
+    answer:
+      'Batas waktu standar adalah tujuh hari kerja. Tenggat setiap peminjaman dapat dilihat pada Katalog dan halaman profil pengguna.',
+  },
+  {
+    question: 'Apakah tersedia E-Book atau PDF?',
+    answer:
+      'Ya. Dokumen digital tertentu tersedia melalui pembaca privat dan hanya dapat dibuka oleh akun terverifikasi.',
+  },
+];
 
-  const faqs = [
-    {
-      q: "Apa itu Pustaka Datun Kejaksaan Agung?",
-      a: "Pustaka Datun adalah platform perpustakaan digital resmi milik Kejaksaan Agung Republik Indonesia yang menyediakan referensi, literatur, serta arsip khusus yang berkaitan dengan bidang Perdata dan Tata Usaha Negara (Datun)."
-    },
-    {
-      q: "Siapa saja yang dapat mengakses layanan Pustaka Datun?",
-      a: "Layanan ini dikhususkan bagi Pegawai Kejaksaan RI, khususnya Jaksa Pengacara Negara (JPN) untuk menunjang kebutuhan riset dan penanganan perkara. Masyarakat umum dapat mengakses katalog secara terbatas dan diwajibkan mengisi Buku Tamu apabila datang secara fisik ke perpustakaan."
-    },
-    {
-      q: "Bagaimana cara meminjam buku atau literatur?",
-      a: "Untuk peminjaman, pengguna harus masuk (login) menggunakan akun pegawai. Setelah itu, cari buku yang dibutuhkan di Katalog, klik tombol 'Pinjam', lalu ambil buku fisik di perpustakaan dengan menunjukkan kode peminjaman."
-    },
-    {
-      q: "Apakah layanan Pustaka Datun dipungut biaya?",
-      a: "Tidak. Seluruh layanan literatur dan akses platform Pustaka Datun sepenuhnya gratis sebagai bentuk fasilitas negara untuk peningkatan kualitas SDM."
-    },
-    {
-      q: "Berapa lama batas waktu peminjaman buku?",
-      a: "Batas waktu standar peminjaman buku adalah 7 hari kerja. Anda dapat mengajukan perpanjangan peminjaman melalui sistem jika buku tersebut belum dipesan oleh pegawai lain."
-    },
-    {
-      q: "Apakah Pustaka Datun menyediakan versi E-Book / PDF?",
-      a: "Ya. Beberapa literatur resmi, regulasi, dan materi paparan Jamdatun tersedia dalam format PDF yang dapat langsung dibaca melalui sistem tanpa harus meminjam buku fisik."
-    }
-  ];
-
+export default function FAQPage() {
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-800 flex flex-col">
-      
-      {/* ── TOP HEADER (Dark) ── */}
-      <header className="bg-[#0B1221] text-white">
-        <div className="max-w-7xl mx-auto px-4 h-[72px] flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-4">
-             <div className="flex items-center gap-2">
-               <span className="text-[#F59E0B] font-black text-2xl tracking-tighter italic">Pustaka</span>
-               <span className="text-white font-black text-2xl tracking-tighter">Datun</span>
-               <Image src="/logo-kejaksaan.png" alt="Logo Kejaksaan" width={40} height={40} className="ml-2" />
-             </div>
-          </Link>
-          
-          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-300">
-             <Link href="/" className="hover:text-white">Beranda</Link>
-             <Link href="/katalog" className="hover:text-white">Katalog Buku</Link>
-             <Link href="/buku-tamu" className="hover:text-white">Buku Tamu</Link>
-             <Link href="/faq" className="text-white">F.A.Q</Link>
-          </nav>
-          
-          <div>
-            {isLoggedIn ? (
-              <ProfileMenu email={userEmail} role={userRole} />
-            ) : (
-              <Link href="/login" className="bg-white text-slate-900 px-5 py-2 rounded font-bold text-sm hover:bg-gray-200">
-                Login
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* ── HERO BANNER ── */}
-      <section className="bg-[#132B4A] py-16 border-y-4 border-[#F59E0B] shadow-lg relative overflow-hidden">
-        <div className="max-w-5xl mx-auto px-4 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-blue-200 rounded text-xs font-bold uppercase tracking-widest mb-4">
+    <div className="flex min-h-screen flex-col bg-[#F7F9FC] text-[#10234A]">
+      <PublicNavbar active="faq" />
+      <main className="flex-1">
+        <section className="px-5 py-16 text-center sm:px-8">
+          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#1967D2]">
             Pusat Bantuan
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
-            Frequently Asked <span className="text-[#F59E0B]">Questions</span>
+          </span>
+          <h1 className="mt-4 text-4xl font-extrabold tracking-tight sm:text-5xl">
+            Pertanyaan yang sering diajukan
           </h1>
-          <p className="text-blue-100 text-lg max-w-2xl mx-auto">
-            Temukan jawaban atas berbagai pertanyaan umum terkait layanan, prosedur peminjaman, dan sistem digital Pustaka Datun.
+          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-500">
+            Informasi mengenai akun, akses dokumen, peminjaman, dan penggunaan
+            layanan Pustaka Datun.
           </p>
-        </div>
-      </section>
+        </section>
 
-      {/* ── FAQ CONTENT ── */}
-      <main className="flex-1 max-w-4xl mx-auto px-4 py-16 w-full">
-        <div className="space-y-6">
-          {faqs.map((faq, idx) => (
-            <div key={idx} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-[#F59E0B]/40 transition-colors">
-              <h3 className="text-lg font-bold text-[#0B1221] mb-3 flex items-start gap-3">
-                <span className="text-[#F59E0B] font-black shrink-0">Q.</span>
-                {faq.q}
-              </h3>
-              <p className="text-gray-600 leading-relaxed text-[15px] flex items-start gap-3">
-                <span className="text-gray-300 font-black shrink-0">A.</span>
-                {faq.a}
-              </p>
-            </div>
-          ))}
-        </div>
+        <section className="px-5 pb-20 sm:px-8">
+          <div className="mx-auto max-w-4xl space-y-4">
+            {FAQS.map((faq, index) => (
+              <article
+                key={faq.question}
+                className="rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_12px_32px_rgba(15,35,74,0.06)]"
+              >
+                <div className="flex gap-4">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-extrabold text-[#1967D2]">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <h2 className="text-sm font-extrabold">{faq.question}</h2>
+                    <p className="mt-3 text-xs leading-6 text-slate-500">
+                      {faq.answer}
+                    </p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
 
-        <div className="mt-12 bg-[#FFFBEB] border border-[#FCD34D] p-6 rounded-xl text-center shadow-sm">
-          <p className="text-[#B45309] font-bold text-lg mb-2">Masih memiliki pertanyaan?</p>
-          <p className="text-[#92400E] text-sm mb-5">
-            Silakan tinggalkan pesan melalui fitur Buku Tamu atau hubungi administrator perpustakaan.
-          </p>
-          <Link href="/buku-tamu" className="inline-block bg-[#D97706] text-white font-bold px-6 py-2.5 rounded shadow hover:bg-[#B45309] transition-colors text-sm">
-            Tanya via Buku Tamu
-          </Link>
-        </div>
-      </main>
-
-      {/* ── FOOTER ── */}
-      <footer className="bg-[#1A253F] pt-12 pb-6 mt-auto">
-        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-10 text-white mb-10">
-          <div>
-            <h4 className="text-[#F59E0B] font-black tracking-widest mb-4 text-sm">Pustaka Datun</h4>
-            <p className="text-sm text-gray-300 leading-relaxed max-w-sm">
-              Inovasi pelayanan digital di bidang literatur hukum dan referensi perundang-undangan oleh Kejaksaan Agung Republik Indonesia.
+          <div className="mx-auto mt-10 max-w-4xl rounded-2xl bg-[#10234A] p-8 text-center text-white">
+            <h2 className="text-xl font-extrabold">Masih memiliki pertanyaan?</h2>
+            <p className="mt-2 text-xs text-slate-300">
+              Tinggalkan pesan melalui Buku Tamu atau hubungi administrator.
             </p>
+            <Link
+              href="/buku-tamu"
+              className="mt-5 inline-flex rounded-lg bg-[#F59E0B] px-6 py-3 text-[11px] font-bold"
+            >
+              Buka Buku Tamu
+            </Link>
           </div>
-          <div className="md:text-right">
-             <h4 className="text-[#F59E0B] font-black tracking-widest mb-4 text-sm">Tautan Cepat</h4>
-             <ul className="space-y-2 text-sm text-gray-300 flex flex-col md:items-end">
-                <li><Link href="/" className="hover:text-white">Beranda</Link></li>
-                <li><Link href="/katalog" className="hover:text-white">Katalog Buku</Link></li>
-                <li><Link href="/login" className="hover:text-white">Akses Petugas</Link></li>
-             </ul>
-          </div>
-        </div>
-        <div className="border-t border-white/10 pt-6 text-center text-xs text-gray-500 font-semibold">
-          {new Date().getFullYear()} © Pustaka Datun Kejaksaan Agung Republik Indonesia. All rights reserved.
-        </div>
-      </footer>
-
+        </section>
+      </main>
+      <PublicFooter />
       <AIAssistant />
     </div>
   );

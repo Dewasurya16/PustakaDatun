@@ -1,7 +1,6 @@
 import { supabase } from '../../lib/supabase';
 import ReturnButton from './ReturnButton';
 import UserAction from './UserAction';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import ProfileMenu from '../ProfileMenu';
 import Link from 'next/link';
@@ -18,6 +17,8 @@ import Image from 'next/image';
 import DashboardCharts from './DashboardCharts';
 import ExportPerPegawai from './ExportPerPegawai';
 import PdfDownloadLog from './PdfDownloadLog';
+import { getAuthenticatedProfile } from '../../lib/auth';
+import { createAuthenticatedClient } from '../../lib/auth';
 
 // 👇 TAMBAHAN UNTUK MEMATIKAN CACHE NEXT.JS 👇
 export const dynamic = 'force-dynamic';
@@ -68,25 +69,26 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   // Filter sirkulasi: 'semua' | 'DIPINJAM' | 'DIKEMBALIKAN' | 'ai_only'
   const sirkulasiFilter = getSearchParam(params?.filter) || 'semua';
 
-  const cookieStore = await cookies();
-  const session   = cookieStore.get('session')?.value;
-  const userEmail = cookieStore.get('user_email')?.value || 'Admin';
-
-  if (session !== 'admin') redirect('/login');
+  const profile = await getAuthenticatedProfile();
+  if (!profile || profile.role !== 'admin') redirect('/login');
+  const authenticatedSupabase = await createAuthenticatedClient();
+  if (!authenticatedSupabase) redirect('/login');
+  const session = profile.role;
+  const userEmail = profile.email;
 
   // ── Fetch semua data ───────────────────────────────────────────────────
   // FIX: ganti loan_date → created_at
-  const { data: loans }    = await supabase
+  const { data: loans }    = await authenticatedSupabase
     .from('loans')
     .select('*, books(title, stock, category, rak)')
     .order('created_at', { ascending: false });
 
-  const { data: profiles } = await supabase
+  const { data: profiles } = await authenticatedSupabase
     .from('profiles')
     .select('*')
     .order('created_at', { ascending: false });
 
-  const { data: books } = await supabase
+  const { data: books } = await authenticatedSupabase
     .from('books')
     .select('*')
     .order('created_at', { ascending: false });

@@ -1,20 +1,14 @@
 import { supabase } from '../../lib/supabase';
 import BukuTamuForm from './components/BukuTamuForm';
 import Link from 'next/link';
-import Image from 'next/image';
-import { cookies } from 'next/headers';
-import ProfileMenu from '../ProfileMenu';
 import AIAssistant from '../AIAssistant';
+import PublicFooter from '../components/PublicFooter';
+import PublicNavbar from '../components/PublicNavbar';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function BukuTamuPage() {
-  const cookieStore = await cookies();
-  const session   = cookieStore.get('session')?.value;
-  const userEmail = cookieStore.get('user_email')?.value || '';
-  const userRole  = session === 'admin' ? 'admin' : 'user';
-
   const { count: totalCount } = await supabase
     .from('buku_tamu')
     .select('*', { count: 'exact', head: true })
@@ -35,37 +29,10 @@ export default async function BukuTamuPage() {
     <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-800 flex flex-col">
       
       {/* ── TOP HEADER (Dark) ── */}
-      <header className="bg-[#0B1221] text-white">
-        <div className="max-w-7xl mx-auto px-4 h-[72px] flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-4">
-             <div className="flex items-center gap-2">
-               <span className="text-[#F59E0B] font-black text-2xl tracking-tighter italic">Pustaka</span>
-               <span className="text-white font-black text-2xl tracking-tighter">Datun</span>
-               <Image src="/logo-kejaksaan.png" alt="Logo Kejaksaan" width={40} height={40} className="ml-2" />
-             </div>
-          </Link>
-          
-          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-300">
-             <Link href="/" className="hover:text-white">Beranda</Link>
-             <Link href="/katalog" className="hover:text-white">Katalog Buku</Link>
-             <Link href="/buku-tamu" className="text-white">Buku Tamu</Link>
-             <Link href="/faq" className="hover:text-white">F.A.Q</Link>
-          </nav>
-          
-          <div>
-            {session ? (
-              <ProfileMenu email={userEmail} role={userRole} />
-            ) : (
-              <Link href="/login" className="bg-white text-slate-900 px-5 py-2 rounded font-bold text-sm hover:bg-gray-200">
-                Login
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
+      <PublicNavbar active="guestbook" />
 
       {/* ── HERO BANNER ── */}
-      <section className="bg-[#132B4A] py-16 border-y-4 border-[#F59E0B] shadow-lg relative overflow-hidden">
+      <section className="relative overflow-hidden bg-[#10234A] py-16">
         <div className="max-w-7xl mx-auto px-4 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-blue-200 rounded text-xs font-bold uppercase tracking-widest mb-4">
@@ -104,11 +71,11 @@ export default async function BukuTamuPage() {
               <h2 className="text-2xl font-black text-[#0B1221]">Kunjungan Terbaru</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {featured.map((entry: any) => (
+              {featured.map((entry) => (
                 <div key={entry.id} className="bg-white border border-gray-200 p-6 rounded-xl shadow-sm relative">
-                  <div className="absolute top-4 right-4 text-[#F59E0B] text-4xl opacity-20 font-serif">"</div>
+                  <div className="absolute top-4 right-4 text-[#F59E0B] text-4xl opacity-20 font-serif">“</div>
                   <p className="text-sm text-gray-600 italic mb-6 relative z-10 min-h-[60px]">
-                    "{entry.pesan || 'Mengunjungi Pustaka Datun.'}"
+                    “{entry.pesan || 'Mengunjungi Pustaka Datun.'}”
                   </p>
                   <div className="flex items-center gap-3 border-t border-gray-100 pt-4">
                     <div className="w-10 h-10 bg-[#16213E] text-white flex items-center justify-center rounded font-bold">
@@ -182,7 +149,7 @@ export default async function BukuTamuPage() {
       </main>
 
       {/* ── FOOTER ── */}
-      <footer className="bg-[#1A253F] pt-12 pb-6 mt-auto">
+      <footer className="hidden">
         <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-10 text-white mb-10">
           <div>
             <h4 className="text-[#F59E0B] font-black tracking-widest mb-4 text-sm">Pustaka Datun</h4>
@@ -203,6 +170,7 @@ export default async function BukuTamuPage() {
           {new Date().getFullYear()} © Pustaka Datun Kejaksaan Agung Republik Indonesia. All rights reserved.
         </div>
       </footer>
+      <PublicFooter />
 
       <AIAssistant />
     </div>

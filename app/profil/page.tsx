@@ -1,36 +1,38 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { supabase } from '../../lib/supabase';
 import Link from 'next/link';
 import Image from 'next/image';
-import MyHistory from '../katalog/History';
 import ChangePasswordModal from './ChangePasswordModal';
+import {
+  createAuthenticatedClient,
+  getAuthenticatedProfile,
+} from '../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function ProfilPage() {
-  const cookieStore = await cookies();
-  const session   = cookieStore.get('session')?.value;
-  const userEmail = cookieStore.get('user_email')?.value || '';
+  const authenticatedProfile = await getAuthenticatedProfile();
+  if (!authenticatedProfile) redirect('/login');
+  const authenticatedSupabase = await createAuthenticatedClient();
+  if (!authenticatedSupabase) redirect('/login');
+  const session = authenticatedProfile.role;
+  const userEmail = authenticatedProfile.email;
 
-  if (!session) redirect('/login');
-
-  const { data: profile } = await supabase
+  const { data: profile } = await authenticatedSupabase
     .from('profiles')
     .select('*')
     .eq('email', userEmail)
     .single();
 
   const autoName = userEmail.split('@')[0];
-  const { data: pegawai } = await supabase
+  const { data: pegawai } = await authenticatedSupabase
     .from('Data Pegawai')
     .select('*')
     .ilike('Email', `%${autoName}%`)
     .limit(1)
     .single();
 
-  const { data: loans } = await supabase
+  const { data: loans } = await authenticatedSupabase
     .from('loans')
     .select('id, status, due_date, created_at, books(title, category)')
     .eq('user_email', userEmail)
@@ -44,7 +46,11 @@ export default async function ProfilPage() {
   const favoriteCategory = (() => {
     if (!loans || loans.length === 0) return '—';
     const catMap: Record<string, number> = {};
-    loans.forEach(l => { const cat = (l.books as any)?.category || 'Lainnya'; catMap[cat] = (catMap[cat] || 0) + 1; });
+    loans.forEach(l => {
+      const relatedBook = l.books as { category?: string } | null;
+      const category = relatedBook?.category || 'Lainnya';
+      catMap[category] = (catMap[category] || 0) + 1;
+    });
     return Object.entries(catMap).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
   })();
 
@@ -214,26 +220,6 @@ export default async function ProfilPage() {
             </div>
           </div>
         )}
-
-        {/* ── RIWAYAT PEMINJAMAN ── */}
-        <div className="reveal bg-white rounded-2xl border border-slate-100 shadow-[var(--shadow-md)] overflow-hidden relative">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-400 to-[var(--green-main)]" />
-          <div className="px-7 py-5 border-b border-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 to-white mt-1">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center text-[18px] shadow-sm shrink-0">📋</div>
-              <div>
-                <h2 className="font-black text-slate-900 text-[15px]">Riwayat Peminjaman</h2>
-                <p className="text-[11px] text-slate-400 font-medium mt-0.5">Semua aktivitas peminjaman buku Anda</p>
-              </div>
-            </div>
-            <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-3 py-1.5 rounded-full border border-slate-200 shrink-0 uppercase tracking-widest">
-              {totalLoans} transaksi
-            </span>
-          </div>
-          <div className="p-7">
-            <MyHistory userEmail={userEmail} />
-          </div>
-        </div>
 
       </main>
     </div>

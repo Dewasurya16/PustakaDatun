@@ -1,22 +1,28 @@
 import { Suspense } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { supabase } from '../../lib/supabase';
+import {
+  createAuthenticatedClient,
+  getAuthenticatedProfile,
+} from '../../lib/auth';
 import { isMasterCategoryName } from '../../lib/categories';
 import AIAssistant from '../AIAssistant';
-import ProfileMenu from '../ProfileMenu';
+import PublicFooter from '../components/PublicFooter';
+import PublicNavbar from '../components/PublicNavbar';
+import type { CatalogBook } from '../components/CatalogBookCard';
 import CategoryFilter from './CategoryFilter';
 import DueDateBanner from './DueDateBanner';
-import MyHistory from './History';
 import PaginationControls from './components/PaginationControls';
+import LibraryCatalogCard, {
+  BookCover,
+} from './components/LibraryCatalogCard';
 import SearchBar from './SearchBar';
 import SortDropdown from './SortDropdown';
-import CatalogBookCard, { type CatalogBook } from '../components/CatalogBookCard';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+const ITEMS_PER_PAGE = 12;
 
 type KatalogSearchParams = {
   q?: string | string[];
@@ -25,9 +31,18 @@ type KatalogSearchParams = {
   page?: string | string[];
 };
 
+type LibraryBook = CatalogBook & {
+  rating?: number | null;
+  rating_count?: number | null;
+  created_at?: string | null;
+};
+
 function getSearchValue(value: string | string[] | undefined) {
-  if (Array.isArray(value)) return value[0] || '';
-  return value || '';
+  return Array.isArray(value) ? value[0] || '' : value || '';
+}
+
+function sanitizeSearchQuery(value: string) {
+  return value.replace(/[,().%]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
 }
 
 export default async function KatalogPage({
@@ -35,277 +50,189 @@ export default async function KatalogPage({
 }: {
   searchParams: Promise<KatalogSearchParams>;
 }) {
-  const cookieStore = await cookies();
-  const session = cookieStore.get('session')?.value;
-  const userEmail = cookieStore.get('user_email')?.value || 'Pegawai';
-  const userRole = session === 'admin' ? 'admin' : 'user';
+  const profile = await getAuthenticatedProfile();
+  if (!profile) redirect('/login?redirect=/katalog');
 
-  if (!session) redirect('/login');
+  const supabase = await createAuthenticatedClient();
+  if (!supabase) redirect('/login?redirect=/katalog');
 
   const params = await searchParams;
-  const query = getSearchValue(params?.q).trim();
-  const rawCat = getSearchValue(params?.cat);
-  const filterCat = isMasterCategoryName(rawCat) ? rawCat : '';
-  const sortParam = getSearchValue(params?.sort) || 'terbaru';
-
-  const ITEMS_PER_PAGE = 12;
-  const pageNumber = Number.parseInt(
-    getSearchValue(params?.page) || '1',
-    10,
-  );
-  const currentPage =
-    Number.isFinite(pageNumber) && pageNumber > 0 ? pageNumber : 1;
+  const query = sanitizeSearchQuery(getSearchValue(params.q));
+  const rawCategory = getSearchValue(params.cat);
+  const category = isMasterCategoryName(rawCategory) ? rawCategory : '';
+  const sort = getSearchValue(params.sort) || 'terbaru';
+  const parsedPage = Number.parseInt(getSearchValue(params.page) || '1', 10);
+  const currentPage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
   const from = (currentPage - 1) * ITEMS_PER_PAGE;
   const to = from + ITEMS_PER_PAGE - 1;
 
-  let supabaseQuery = supabase
-    .from('books')
-    .select('*', { count: 'exact' });
-
-  if (query)
-    supabaseQuery = supabaseQuery.or(
+  let booksQuery = supabase.from('books').select('*', { count: 'exact' });
+  if (query) {
+    booksQuery = booksQuery.or(
       `title.ilike.%${query}%,author.ilike.%${query}%`,
     );
-  if (filterCat) supabaseQuery = supabaseQuery.eq('category', filterCat);
+  }
+  if (category) booksQuery = booksQuery.eq('category', category);
 
-  if (sortParam === 'abjad') {
-    supabaseQuery = supabaseQuery
-      .order('title', { ascending: true })
-      .order('id', { ascending: true });
-  } else if (sortParam === 'stok') {
-    supabaseQuery = supabaseQuery
-      .order('stock', { ascending: false })
-      .order('id', { ascending: true });
+  if (sort === 'abjad') {
+    booksQuery = booksQuery.order('title', { ascending: true });
+  } else if (sort === 'stok') {
+    booksQuery = booksQuery.order('stock', { ascending: false });
   } else {
-    supabaseQuery = supabaseQuery
-      .order('created_at', { ascending: false })
-      .order('id', { ascending: true });
+    booksQuery = booksQuery.order('created_at', { ascending: false });
   }
 
-  supabaseQuery = supabaseQuery.range(from, to);
+  const { data, count, error } = await booksQuery
+    .order('id', { ascending: true })
+    .range(from, to);
+  if (error) throw new Error('Katalog tidak dapat dimuat.');
 
-  const { data: books, count } = await supabaseQuery;
+  const books = (data || []) as LibraryBook[];
+  const featuredBooks = books.slice(0, 4);
+  const shelfBooks = books.slice(4);
   const totalPages = Math.ceil((count || 0) / ITEMS_PER_PAGE);
-  const catalogBooks = (books || []) as CatalogBook[];
 
   return (
-    <div className="min-h-screen bg-[#eae9e6] text-neutral-950">
-      <div className="mx-auto min-h-screen max-w-[1320px] overflow-hidden bg-white shadow-[0_28px_80px_rgba(15,23,42,0.10)] sm:my-6 sm:rounded-2xl">
-        {/* ═══════════════ HERO ═══════════════ */}
-        <section className="relative overflow-hidden bg-[#ecebea] px-5 pb-20 pt-6 sm:px-10 lg:px-16">
-          {/* Background image */}
-          <Image
-            src="/images/kejaksaan agung.png"
-            alt=""
-            fill
-            priority
-            className="object-cover object-center opacity-[0.07] grayscale"
-          />
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f4f9ff_0%,#e8f3ff_48%,#dcecff_100%)] text-[#17131f]">
+      <PublicNavbar active="catalog" />
 
-          {/* Decorative shapes */}
-          <div className="absolute -left-14 bottom-4 h-28 w-64 rotate-[-14deg] border border-black/5 bg-white/60 shadow-[0_20px_50px_rgba(15,23,42,0.06)]" />
-          <div className="absolute -right-8 bottom-8 h-32 w-72 rotate-[10deg] border border-black/5 bg-white/70 shadow-[0_20px_50px_rgba(15,23,42,0.06)]" />
-
-          {/* Navigation bar */}
-          <div className="relative z-10 flex items-center justify-between gap-4">
-            <Link href="/" className="flex items-center gap-3">
-              <Image
-                src="/logo-kejaksaan.png"
-                alt="Logo Kejaksaan"
-                width={34}
-                height={34}
-                className="object-contain"
-              />
-              <div className="leading-tight">
-                <p className="text-[13px] font-semibold">PustakaDatun</p>
-                <p className="text-[11px] text-neutral-500">
-                  Katalog Literatur
+      <main className="px-3 py-6 sm:px-6 sm:py-9 lg:py-12">
+        <div className="mx-auto max-w-[1160px] overflow-hidden rounded-[26px] border border-white/90 bg-white shadow-[0_24px_65px_rgba(47,88,128,0.13)]">
+          <section className="relative overflow-hidden border-b border-[#dce9f5] bg-[radial-gradient(circle_at_90%_10%,rgba(96,165,250,0.18),transparent_30%),linear-gradient(135deg,#f8fbff_0%,#edf6ff_100%)] px-5 py-7 sm:px-8 sm:py-8 lg:px-10">
+            <div className="absolute -right-14 -top-20 h-44 w-44 rounded-full border-[28px] border-white/55" />
+            <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/80 px-3 py-1 shadow-sm">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#2f80d1]" />
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#276fb6]">
+                    Perpustakaan Digital
+                  </p>
+                </div>
+                <h1 className="mt-3 text-3xl font-black tracking-[-0.035em] text-[#17233c] sm:text-[36px]">
+                  Koleksi Pustaka Datun
+                </h1>
+                <p className="mt-2 max-w-xl text-[13px] leading-6 text-slate-500">
+                  Temukan referensi hukum, dokumen penunjang, dan literatur
+                  internal dalam satu katalog.
                 </p>
               </div>
-            </Link>
-
-            <div className="flex items-center gap-2">
-              <Link
-                href="/"
-                className="hidden rounded-full border border-neutral-300 bg-white/70 px-4 py-2 text-[12px] font-semibold text-neutral-800 transition-colors hover:bg-white md:inline-flex"
-              >
-                Menu
-              </Link>
-              <Link
-                href="/katalog"
-                className="hidden rounded-full bg-neutral-950 px-4 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-neutral-800 md:inline-flex"
-              >
-                Katalog
-              </Link>
-              <ProfileMenu email={userEmail} role={userRole} />
+              <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-white/85 px-3.5 py-2.5 shadow-[0_8px_22px_rgba(47,88,128,0.08)] backdrop-blur">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-[#2f80d1]">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-lg font-black leading-none text-[#17233c]">{count || 0}</p>
+                  <p className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">Koleksi tersedia</p>
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Hero text */}
-          <div className="relative z-10 mx-auto max-w-2xl pb-4 pt-16 text-center sm:pt-20">
-            <h1 className="text-3xl font-semibold tracking-normal text-neutral-950 sm:text-4xl">
-              Pustaka Datun Kejaksaan Agung
-            </h1>
-            <p className="mx-auto mt-4 max-w-xl text-[13px] leading-6 text-neutral-600">
-              Temukan buku Datun, materi paparan, peraturan, legal opinion,
-              dan dokumen penunjang dalam satu katalog digital.
-            </p>
-            <Link
-              href="#koleksi"
-              className="mt-6 inline-flex h-10 items-center rounded-full bg-[#27b8a7] px-6 text-[12px] font-bold text-white shadow-[0_10px_24px_rgba(39,184,167,0.25)] transition-all hover:-translate-y-0.5 hover:bg-[#1ea393] hover:shadow-[0_14px_28px_rgba(39,184,167,0.30)]"
-            >
-              Lihat Katalog
-            </Link>
-          </div>
-        </section>
-
-        {/* ═══════════════ MAIN CONTENT ═══════════════ */}
-        <main
-          id="koleksi"
-          className="relative bg-white px-5 pb-20 sm:px-10 lg:px-16"
-        >
-          {/* ── Filter bar ── */}
-          <div className="relative z-20 mx-auto -mt-8 max-w-5xl rounded-xl border border-neutral-100 bg-white p-4 shadow-[0_12px_36px_rgba(15,23,42,0.07)] sm:p-5">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-[1.3fr_1fr_1fr_auto]">
-              <Suspense
-                fallback={
-                  <div className="h-11 animate-pulse rounded-lg bg-neutral-100" />
-                }
-              >
+            <div className="relative mt-6 grid gap-2.5 rounded-[18px] border border-[#d8e7f4] bg-white/90 p-2.5 shadow-[0_10px_28px_rgba(47,88,128,0.07)] sm:grid-cols-2 lg:grid-cols-[1.35fr_0.9fr_0.75fr]">
+              <Suspense fallback={<div className="h-11 animate-pulse rounded-lg bg-white" />}>
                 <SearchBar />
               </Suspense>
-              <Suspense
-                fallback={
-                  <div className="h-11 animate-pulse rounded-lg bg-neutral-100" />
-                }
-              >
+              <Suspense fallback={<div className="h-11 animate-pulse rounded-lg bg-white" />}>
                 <CategoryFilter />
               </Suspense>
-              <Suspense
-                fallback={
-                  <div className="h-11 animate-pulse rounded-lg bg-neutral-100" />
-                }
-              >
+              <Suspense fallback={<div className="h-11 animate-pulse rounded-lg bg-white" />}>
                 <SortDropdown />
               </Suspense>
-              <a
-                href="#koleksi"
-                className="inline-flex h-11 items-center justify-center rounded-lg bg-[#27b8a7] px-6 text-[13px] font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-[#1ea393] hover:shadow-md"
-              >
-                Cari
-              </a>
             </div>
-          </div>
-
-          {/* Due date banner */}
-          <div className="mt-8">
-            <DueDateBanner userEmail={userEmail} />
-          </div>
-
-          {/* ── Section heading ── */}
-          <div className="mb-8 mt-14 flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-semibold tracking-normal text-neutral-950">
-                Koleksi Terbaru
-              </h2>
-              <p className="mt-2 text-[13px] text-neutral-500">
-                {count || 0} koleksi ditemukan
-                {filterCat ? ` dalam kategori ${filterCat}` : ''}.
-              </p>
-            </div>
-            <Link
-              href="/katalog"
-              className="hidden text-[12px] font-semibold text-neutral-700 transition-colors hover:text-neutral-950 hover:underline sm:inline-flex"
-            >
-              Tampilkan Semua
-            </Link>
-          </div>
-
-          {/* ── Book grid ── */}
-          {catalogBooks.length > 0 ? (
-            <>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {catalogBooks.map((book, index) => (
-                  <CatalogBookCard
-                    key={book.id}
-                    book={book}
-                    index={index}
-                    primaryAction={
-                      <Link
-                        href={`/buku/${book.id}`}
-                        className="inline-flex w-full items-center justify-center rounded-lg bg-neutral-900 px-3 py-2 text-[11px] font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-neutral-800 hover:shadow-md"
-                      >
-                        Detail & Pinjam
-                      </Link>
-                    }
-                    secondaryAction={
-                      book.pdf_url ? (
-                        <a
-                          href={book.pdf_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex w-full items-center justify-center rounded-lg border border-neutral-200 bg-white px-3 py-2 text-[11px] font-bold text-neutral-800 transition-all hover:-translate-y-0.5 hover:border-neutral-400 hover:shadow-sm"
-                        >
-                          Unduh PDF
-                        </a>
-                      ) : (
-                        <span className="inline-flex w-full items-center justify-center rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2 text-[11px] font-bold text-neutral-300">
-                          PDF
-                        </span>
-                      )
-                    }
-                  />
-                ))}
-              </div>
-
-              <div className="mt-14">
-                <PaginationControls
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                />
-              </div>
-            </>
-          ) : (
-            <div className="rounded-xl border border-dashed border-neutral-200 py-20 text-center">
-              <p className="text-4xl">📚</p>
-              <h3 className="mt-4 text-lg font-semibold text-neutral-950">
-                Buku tidak ditemukan
-              </h3>
-              <p className="mt-2 text-sm text-neutral-500">
-                Coba kata kunci lain atau pilih kategori berbeda.
-              </p>
-            </div>
-          )}
-
-          {/* ── Riwayat peminjaman ── */}
-          <section className="mt-20 border-t border-neutral-100 pt-10">
-            <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-              <div>
-                <h2 className="text-2xl font-semibold tracking-normal text-neutral-950">
-                  Riwayat Peminjaman
-                </h2>
-                <p className="mt-2 text-[13px] text-neutral-500">
-                  Kelola peminjaman aktif dan ulasan Anda.
-                </p>
-              </div>
-              <Link
-                href="/profil"
-                className="text-[12px] font-semibold text-neutral-700 transition-colors hover:text-neutral-950 hover:underline"
-              >
-                Lihat di Profil
-              </Link>
-            </div>
-            <MyHistory userEmail={userEmail} />
           </section>
-        </main>
 
-        {/* ═══════════════ FOOTER ═══════════════ */}
-        <footer className="bg-neutral-950 px-6 py-10 text-center text-[12px] text-white/50">
-          {new Date().getFullYear()} Pustaka Datun Kejaksaan Agung
-          Republik Indonesia. All rights reserved.
-        </footer>
-      </div>
+          <section className="px-5 py-6 sm:px-8 sm:py-7 lg:px-10">
+            <DueDateBanner />
 
+            {books.length === 0 ? (
+              <div className="mt-8 rounded-[24px] border border-dashed border-[#e8d7d2] bg-[#fffaf8] px-5 py-20 text-center">
+                <p className="text-4xl">📚</p>
+                <h2 className="mt-4 text-xl font-black text-[#17233c]">Buku tidak ditemukan</h2>
+                <p className="mt-2 text-sm text-slate-400">
+                  Coba kata kunci atau kategori yang berbeda.
+                </p>
+                <Link href="/katalog" className="mt-5 inline-flex rounded-full bg-[#17233c] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#243659]">
+                  Reset pencarian
+                </Link>
+              </div>
+            ) : (
+              <>
+                <div className="mt-5 flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#f97316]">
+                      Pilihan katalog
+                    </p>
+                    <h2 className="mt-1.5 text-2xl font-black tracking-tight text-[#17233c]">Buku untuk Anda</h2>
+                  </div>
+                  <Link href="/layanan" className="hidden rounded-full border border-[#eaded9] px-4 py-2 text-[11px] font-bold text-slate-500 transition hover:border-orange-200 hover:text-[#f97316] sm:inline-flex">
+                    Lihat kategori →
+                  </Link>
+                </div>
+
+                <div className="mt-6 grid gap-5 lg:grid-cols-2">
+                  {featuredBooks.map((book, index) => (
+                    <LibraryCatalogCard key={book.id} book={book} index={index} />
+                  ))}
+                </div>
+
+                {shelfBooks.length > 0 ? (
+                  <div className="mt-14">
+                    <div className="flex items-end justify-between gap-4">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#f97316]">
+                          Rak digital
+                        </p>
+                        <h2 className="mt-1.5 text-2xl font-black tracking-tight text-[#17233c]">Koleksi lainnya</h2>
+                      </div>
+                      <span className="text-[10px] font-semibold text-slate-400">
+                        Halaman {currentPage}
+                      </span>
+                    </div>
+
+                    <div className="mt-6 grid grid-cols-2 gap-4 rounded-[24px] border border-[#f1e8e5] bg-[#fffaf8] p-3 sm:grid-cols-3 sm:gap-5 sm:p-5 lg:grid-cols-4 xl:grid-cols-5">
+                      {shelfBooks.map((book, index) => (
+                        <Link
+                          key={book.id}
+                          href={`/buku/${book.id}`}
+                          className="group min-w-0 rounded-2xl bg-white p-3 shadow-[0_6px_20px_rgba(65,44,42,0.06)] ring-1 ring-[#f2e8e4] transition duration-300 hover:-translate-y-1 hover:shadow-[0_14px_32px_rgba(65,44,42,0.12)]"
+                        >
+                          <BookCover book={book} index={index + 4} />
+                          <h3 className="mt-4 line-clamp-2 min-h-10 text-xs font-black leading-5 text-[#17233c] group-hover:text-[#f97316]">
+                            {book.title}
+                          </h3>
+                          <p className="mt-1 truncate text-[10px] font-medium text-slate-400">
+                            {book.author || 'Pustaka Datun'}
+                          </p>
+                          <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-[10px] font-bold">
+                            <span className="text-amber-500">
+                              ★ {book.rating ? Number(book.rating).toFixed(1) : '—'}
+                            </span>
+                            <span className={book.stock > 0 ? 'text-emerald-600' : 'text-rose-500'}>
+                              {book.stock > 0 ? `${book.stock} stok` : 'Habis'}
+                            </span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="mt-10">
+                  <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                  />
+                </div>
+              </>
+            )}
+          </section>
+
+        </div>
+      </main>
+
+      <PublicFooter />
       <AIAssistant />
     </div>
   );

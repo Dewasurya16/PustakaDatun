@@ -65,7 +65,7 @@ export default function SearchBar() {
         placeholder="Cari judul, penulis..."
         value={searchTerm}
         onChange={(event) => setSearchTerm(event.target.value)}
-        className="h-11 w-full rounded-lg border border-neutral-200 bg-neutral-50/60 pl-11 pr-10 text-[13px] font-medium text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-900/5"
+        className="h-11 w-full rounded-xl border border-[#d7e5f2] bg-white pl-11 pr-10 text-[12px] font-semibold text-[#17233c] outline-none transition-all placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-4 focus:ring-blue-100/70"
       />
 
       {/* Clear button */}

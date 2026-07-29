@@ -120,7 +120,7 @@ export default function BorrowModal({ book, userEmail }: { book: any; userEmail:
           if (book.stock > 0) setIsOpen(true);
         }}
         disabled={book.stock === 0}
-        className="w-full bg-slate-900 text-white px-4 py-3.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black active:scale-[0.98] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)]"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#17233c] px-4 py-3 text-[9px] font-black uppercase tracking-widest text-white shadow-[0_7px_18px_rgba(23,35,60,0.2)] transition-all hover:-translate-y-0.5 hover:bg-[#243659] hover:shadow-[0_10px_22px_rgba(23,35,60,0.24)] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
       >
         {book.stock > 0 ? (
           <><span>🔖</span> Pinjam Buku</>

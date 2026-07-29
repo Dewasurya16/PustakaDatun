@@ -1,9 +1,14 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
 
-export default function DueDateBanner({ userEmail }: { userEmail: string }) {
-  const [loans, setLoans] = useState<any[]>([]);
+type DueLoan = {
+  due_date: string;
+  status?: string;
+  books?: { title?: string } | null;
+};
+
+export default function DueDateBanner() {
+  const [loans, setLoans] = useState<DueLoan[]>([]);
   const [overdueCount, setOverdueCount] = useState(0);
   const [soonCount, setSoonCount] = useState(0);
   const [dismissed, setDismissed] = useState(false);
@@ -11,11 +16,15 @@ export default function DueDateBanner({ userEmail }: { userEmail: string }) {
 
   useEffect(() => {
     const check = async () => {
-      const { data } = await supabase
-        .from('loans')
-        .select('due_date, status, books(title)')
-        .eq('user_email', userEmail)
-        .eq('status', 'DIPINJAM');
+      const response = await fetch('/api/my-loans', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      if (!response.ok) return;
+      const result = await response.json();
+      const data = ((result.data || []) as DueLoan[]).filter(
+        (loan) => loan.status === 'DIPINJAM',
+      );
 
       if (!data) return;
       const now = new Date();
@@ -33,7 +42,7 @@ export default function DueDateBanner({ userEmail }: { userEmail: string }) {
       setSoonCount(soon);
     };
     check();
-  }, [userEmail]);
+  }, []);
 
   if (dismissed || (overdueCount === 0 && soonCount === 0)) return null;
 

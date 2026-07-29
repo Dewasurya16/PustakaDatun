@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 // Normalise status ke uppercase untuk perbandingan (handle "Dipinjam" vs "DIPINJAM")
 const normalizeStatus = (s: string) => (s || '').toUpperCase().trim();
 
-export default function MyHistory({ userEmail }: { userEmail: string }) {
+export default function MyHistory() {
   const [loans,        setLoans]        = useState<any[]>([]);
   const [mounted,      setMounted]      = useState(false);
   const [loading,      setLoading]      = useState(true);
@@ -14,8 +14,6 @@ export default function MyHistory({ userEmail }: { userEmail: string }) {
   const [ratingModal,  setRatingModal]  = useState<any>(null);
   const [selectedStar, setSelectedStar] = useState(5);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const autoName = userEmail.split('@')[0].toLowerCase();
 
   const fetchMyLoans = useCallback(async () => {
     setLoading(true);
@@ -30,19 +28,15 @@ export default function MyHistory({ userEmail }: { userEmail: string }) {
        *   employee_name ilike %autoName%       ← pinjam via katalog lama / Lexi jika nama mirip email
        *   employee_name ilike %emailFull%      ← fallback full email
        */
-      const { data, error } = await supabase
-        .from('loans')
-        .select('*, books(*)')
-        .or(
-          [
-            `user_email.eq.${userEmail}`,
-            `employee_name.ilike.%${autoName}%`,
-            `employee_name.ilike.%${userEmail}%`,
-          ].join(',')
-        )
-        .order('id', { ascending: false });
-
-      if (error) throw error;
+      const response = await fetch('/api/my-loans', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Riwayat gagal dimuat.');
+      }
+      const data = result.data || [];
 
       // Deduplicate berdasarkan id (bisa muncul ganda karena OR)
       const unique = Array.from(
@@ -55,7 +49,7 @@ export default function MyHistory({ userEmail }: { userEmail: string }) {
     } finally {
       setLoading(false);
     }
-  }, [userEmail, autoName]);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
